@@ -50,7 +50,7 @@ namespace AIReportsTool.Web.Controllers
                 var jsonContent = JsonSerializer.Serialize(payload);
                 var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
-                var response = await client.PostAsync($"{apiBaseUrl}/api/request", httpContent);
+                var response = await client.PostAsync($"{apiBaseUrl}/api/Request", httpContent);
 
                 if (response.IsSuccessStatusCode)
                 {

@@ -30,7 +30,7 @@ namespace AIReportsTool.Web.Controllers
                 var apiBaseUrl = _configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5100";
                 var client = _httpClientFactory.CreateClient();
 
-                var response = await client.GetAsync($"{apiBaseUrl}/api/recents");
+                var response = await client.GetAsync($"{apiBaseUrl}/api/Recents");
 
                 if (response.IsSuccessStatusCode)
                 {
