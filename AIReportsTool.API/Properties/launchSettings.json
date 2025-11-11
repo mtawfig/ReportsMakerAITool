@@ -39,3 +39,14 @@
     }
   }
 }
+  "profiles": {
+    "AIReportsTool.API": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:45286;http://localhost:45287"
+    }
+  }
+}
