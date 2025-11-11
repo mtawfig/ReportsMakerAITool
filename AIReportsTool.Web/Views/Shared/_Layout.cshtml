@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="@ViewBag.Language" dir="@ViewBag.Direction">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Reports Tool</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">@(ViewBag.Language == "ar" ? "أداة التقارير بالذكاء الاصطناعي" : "AI Reports Tool")</h1>
+                <div class="language-toggle">
+                    <a href="/Language/Switch?lang=en" class="lang-btn @(ViewBag.Language == "en" ? "active" : "")" title="English">
+                        EN
+                    </a>
+                    <a href="/Language/Switch?lang=ar" class="lang-btn @(ViewBag.Language == "ar" ? "active" : "")" title="العربية">
+                        AR
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-container">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <nav class="sidebar-nav">
+                    <div class="nav-section">
+                        <h3 class="nav-title">@(ViewBag.Language == "ar" ? "الرئيسية" : "Home")</h3>
+                        <ul class="nav-list">
+                            <li>
+                                <a href="/" class="nav-link active">
+                                    <span class="nav-icon">🏠</span>
+                                    <span>@(ViewBag.Language == "ar" ? "الصفحة الرئيسية" : "Home Page")</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3 class="nav-title">@(ViewBag.Language == "ar" ? "التطبيقات" : "Applications")</h3>
+                        <ul class="nav-list" id="applications-list">
+                            <li class="loading">@(ViewBag.Language == "ar" ? "جاري التحميل..." : "Loading...")</li>
+                        </ul>
+                    </div>
+
+                    <div class="nav-section">
+                        <h3 class="nav-title">@(ViewBag.Language == "ar" ? "الأخيرة" : "Recents")</h3>
+                        <ul class="nav-list" id="recents-list">
+                            <li class="loading">@(ViewBag.Language == "ar" ? "جاري التحميل..." : "Loading...")</li>
+                        </ul>
+                    </div>
+                </nav>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="content">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <script src="~/js/site.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

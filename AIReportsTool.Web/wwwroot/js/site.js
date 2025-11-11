@@ -1,0 +1,424 @@
+// =======================
+// AI Reports Tool - Main JavaScript
+// Handles all client-side interactions
+// =======================
+
+// Global state
+let selectedAppId = null;
+let selectedAppName = null;
+let selectedFormat = null;
+let lastResponseText = null;
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function () {
+    initializeApp();
+});
+
+// Initialize application
+function initializeApp() {
+    loadApplications();
+    loadRecents();
+    setupEventListeners();
+}
+
+// Setup all event listeners
+function setupEventListeners() {
+    // Format button selection
+    const formatButtons = document.querySelectorAll('.format-btn');
+    formatButtons.forEach(btn => {
+        btn.addEventListener('click', function () {
+            formatButtons.forEach(b => b.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedFormat = this.getAttribute('data-format');
+        });
+    });
+
+    // Submit button
+    const submitBtn = document.getElementById('submit-btn');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', handleSubmit);
+    }
+
+    // Share button
+    const shareBtn = document.getElementById('share-btn');
+    if (shareBtn) {
+        shareBtn.addEventListener('click', toggleShareMenu);
+    }
+
+    // Share options
+    const shareOptions = document.querySelectorAll('.share-option');
+    shareOptions.forEach(option => {
+        option.addEventListener('click', function () {
+            const action = this.getAttribute('data-action');
+            handleShareAction(action);
+        });
+    });
+
+    // Close share menu when clicking outside
+    document.addEventListener('click', function (event) {
+        const shareContainer = document.querySelector('.share-container');
+        const shareMenu = document.getElementById('share-menu');
+        if (shareContainer && shareMenu && !shareContainer.contains(event.target)) {
+            shareMenu.classList.remove('show');
+        }
+    });
+}
+
+// Load applications from API
+async function loadApplications() {
+    const listElement = document.getElementById('applications-list');
+    if (!listElement) return;
+
+    try {
+        const response = await fetch('/Applications/GetApps');
+        const result = await response.json();
+
+        if (result.Status === 1 && result.Data && result.Data.length > 0) {
+            listElement.innerHTML = '';
+            result.Data.forEach(app => {
+                const li = document.createElement('li');
+                const link = document.createElement('a');
+                link.href = '#';
+                link.className = 'nav-link';
+                link.innerHTML = `
+                    <span class="nav-icon">${getAppIcon(app.AppId)}</span>
+                    <span>${window.isArabic ? app.AppNameAr : app.AppNameEn}</span>
+                `;
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    selectApplication(app);
+                });
+                li.appendChild(link);
+                listElement.appendChild(li);
+            });
+        } else {
+            listElement.innerHTML = `<li class="loading">${window.isArabic ? 'لا توجد تطبيقات' : 'No applications'}</li>`;
+        }
+    } catch (error) {
+        console.error('Error loading applications:', error);
+        listElement.innerHTML = `<li class="loading">${window.isArabic ? 'خطأ في التحميل' : 'Error loading'}</li>`;
+    }
+}
+
+// Load recent requests from API
+async function loadRecents() {
+    const listElement = document.getElementById('recents-list');
+    if (!listElement) return;
+
+    try {
+        const response = await fetch('/Recents/GetRecents');
+        const result = await response.json();
+
+        if (result.Status === 1 && result.Data && result.Data.length > 0) {
+            listElement.innerHTML = '';
+            result.Data.forEach(recent => {
+                const li = document.createElement('li');
+                const link = document.createElement('a');
+                link.href = '#';
+                link.className = 'nav-link';
+                link.innerHTML = `
+                    <span class="nav-icon">${getAppIcon(recent.AppId)}</span>
+                    <span>${recent.Subject}</span>
+                `;
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    loadRecentRequest(recent);
+                });
+                li.appendChild(link);
+                listElement.appendChild(li);
+            });
+        } else {
+            listElement.innerHTML = `<li class="loading">${window.isArabic ? 'لا توجد طلبات حديثة' : 'No recent requests'}</li>`;
+        }
+    } catch (error) {
+        console.error('Error loading recents:', error);
+        listElement.innerHTML = `<li class="loading">${window.isArabic ? 'خطأ في التحميل' : 'Error loading'}</li>`;
+    }
+}
+
+// Select an application
+function selectApplication(app) {
+    selectedAppId = app.AppId;
+    selectedAppName = window.isArabic ? app.AppNameAr : app.AppNameEn;
+
+    // Update UI to show selected app
+    document.getElementById('selected-appid').value = selectedAppId;
+    document.getElementById('selected-appname').value = selectedAppName;
+
+    // Highlight selected app
+    const allLinks = document.querySelectorAll('#applications-list .nav-link');
+    allLinks.forEach(link => link.classList.remove('active'));
+    event.target.closest('.nav-link').classList.add('active');
+
+    // Show message
+    showMessage('success', window.isArabic ?
+        `تم اختيار التطبيق: ${selectedAppName}` :
+        `Selected application: ${selectedAppName}`
+    );
+}
+
+// Load a recent request into the form
+function loadRecentRequest(recent) {
+    selectedAppId = recent.AppId;
+    selectedAppName = window.isArabic ? recent.AppNameAr : recent.AppNameEn;
+
+    document.getElementById('selected-appid').value = selectedAppId;
+    document.getElementById('selected-appname').value = selectedAppName;
+    document.getElementById('subject').value = recent.Subject;
+    document.getElementById('request-text').value = recent.Details;
+
+    // Highlight selected recent
+    const allLinks = document.querySelectorAll('#recents-list .nav-link');
+    allLinks.forEach(link => link.classList.remove('active'));
+    event.target.closest('.nav-link').classList.add('active');
+
+    // Show message
+    showMessage('success', window.isArabic ?
+        'تم تحميل الطلب السابق' :
+        'Previous request loaded'
+    );
+
+    // Scroll to form
+    document.getElementById('subject').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Handle form submission
+async function handleSubmit() {
+    const subject = document.getElementById('subject').value.trim();
+    const requestText = document.getElementById('request-text').value.trim();
+
+    // Validation
+    if (!selectedAppId) {
+        showMessage('error', window.isArabic ?
+            'الرجاء اختيار تطبيق من القائمة الجانبية' :
+            'Please select an application from the sidebar'
+        );
+        return;
+    }
+
+    if (!subject) {
+        showMessage('error', window.isArabic ?
+            'الرجاء إدخال الموضوع' :
+            'Please enter a subject'
+        );
+        return;
+    }
+
+    if (!requestText) {
+        showMessage('error', window.isArabic ?
+            'الرجاء إدخال نص الطلب' :
+            'Please enter request text'
+        );
+        return;
+    }
+
+    // Disable submit button
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = window.isArabic ? 'جاري الإرسال...' : 'Submitting...';
+
+    try {
+        const payload = {
+            Token: '',
+            Username: '',
+            AppId: selectedAppId,
+            Subject: subject,
+            RequestText: requestText
+        };
+
+        const response = await fetch('/Request/Submit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.Status === 1) {
+            // Success
+            lastResponseText = result.ResponseText;
+            displayResponse(result.ResponseText);
+            enableShareButton();
+            showMessage('success', result.Message);
+        } else {
+            // Error
+            showMessage('error', result.Message || (window.isArabic ?
+                'فشل في إرسال الطلب' :
+                'Failed to submit request'
+            ));
+        }
+    } catch (error) {
+        console.error('Error submitting request:', error);
+        showMessage('error', window.isArabic ?
+            'حدث خطأ أثناء إرسال الطلب' :
+            'An error occurred while submitting the request'
+        );
+    } finally {
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitBtn.textContent = window.isArabic ? 'إرسال' : 'Submit';
+    }
+}
+
+// Display response
+function displayResponse(responseText) {
+    const responseContainer = document.getElementById('response-container');
+    const responseTextElement = document.getElementById('response-text');
+
+    if (responseContainer && responseTextElement) {
+        responseTextElement.textContent = responseText;
+        responseContainer.style.display = 'block';
+        responseContainer.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+// Enable share button
+function enableShareButton() {
+    const shareBtn = document.getElementById('share-btn');
+    if (shareBtn) {
+        shareBtn.disabled = false;
+    }
+}
+
+// Toggle share menu
+function toggleShareMenu(event) {
+    event.stopPropagation();
+    const shareMenu = document.getElementById('share-menu');
+    if (shareMenu) {
+        shareMenu.classList.toggle('show');
+    }
+}
+
+// Handle share actions
+function handleShareAction(action) {
+    const shareMenu = document.getElementById('share-menu');
+    if (shareMenu) {
+        shareMenu.classList.remove('show');
+    }
+
+    if (!lastResponseText) {
+        showMessage('error', window.isArabic ?
+            'لا يوجد محتوى للمشاركة' :
+            'No content to share'
+        );
+        return;
+    }
+
+    switch (action) {
+        case 'email':
+            handleEmailShare();
+            break;
+        case 'download':
+            handleDownload();
+            break;
+        case 'print':
+            handlePrint();
+            break;
+    }
+}
+
+// Handle email share
+function handleEmailShare() {
+    const subject = document.getElementById('subject').value;
+    const body = lastResponseText;
+    const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailto;
+}
+
+// Handle download
+function handleDownload() {
+    const subject = document.getElementById('subject').value;
+    const content = lastResponseText;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${subject}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showMessage('success', window.isArabic ?
+        'تم تحميل الملف' :
+        'File downloaded'
+    );
+}
+
+// Handle print
+function handlePrint() {
+    const printWindow = window.open('', '_blank');
+    const subject = document.getElementById('subject').value;
+    const content = lastResponseText;
+
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>${subject}</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    padding: 20px;
+                    line-height: 1.6;
+                }
+                h1 {
+                    color: #333;
+                    margin-bottom: 20px;
+                }
+                .content {
+                    white-space: pre-wrap;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>${subject}</h1>
+            <div class="content">${content}</div>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+        printWindow.print();
+    }, 250);
+}
+
+// Show message
+function showMessage(type, message) {
+    // Remove existing message
+    const existingMessage = document.querySelector('.message');
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+
+    // Create new message
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message message-${type}`;
+    messageDiv.textContent = message;
+
+    // Insert at top of form
+    const form = document.querySelector('.request-form');
+    if (form) {
+        form.insertBefore(messageDiv, form.firstChild);
+
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            messageDiv.remove();
+        }, 5000);
+    }
+}
+
+// Get app icon based on app ID
+function getAppIcon(appId) {
+    const icons = {
+        1: '📊',
+        2: '👥',
+        3: '💰',
+        4: '📦',
+        5: '👤'
+    };
+    return icons[appId] || '📄';
+}
