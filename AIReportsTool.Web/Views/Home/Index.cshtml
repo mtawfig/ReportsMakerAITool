@@ -1,0 +1,98 @@
+@{
+    ViewData["Title"] = "Home";
+    var language = ViewBag.Language ?? "en";
+    var isArabic = language == "ar";
+}
+
+<div class="home-content">
+    <!-- Welcome Section -->
+    <div class="welcome-section">
+        <h2 class="section-title">@(isArabic ? "مرحباً في أداة التقارير بالذكاء الاصطناعي" : "Welcome to AI Reports Tool")</h2>
+        <p class="section-description">
+            @(isArabic ? "قم بإنشاء تقارير ذكية باستخدام الذكاء الاصطناعي. اختر تطبيقاً من القائمة الجانبية، أدخل موضوعك وطلبك، واحصل على تقارير فورية." : "Generate intelligent reports using AI. Select an application from the sidebar, enter your subject and request, and get instant reports.")
+        </p>
+    </div>
+
+    <!-- Request Form -->
+    <div class="request-form">
+        <input type="hidden" id="selected-appid" value="" />
+        <input type="hidden" id="selected-appname" value="" />
+
+        <div class="form-group">
+            <label for="subject" class="form-label">
+                @(isArabic ? "الموضوع" : "Subject")
+            </label>
+            <input type="text" id="subject" class="form-control"
+                   placeholder="@(isArabic ? "أدخل موضوع التقرير" : "Enter report subject")" />
+        </div>
+
+        <div class="form-group">
+            <label for="request-text" class="form-label">
+                @(isArabic ? "الطلب" : "Request")
+            </label>
+            <textarea id="request-text" class="form-control" rows="6"
+                      placeholder="@(isArabic ? "اكتب تفاصيل طلبك هنا..." : "Write your request details here...")"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">@(isArabic ? "تنسيق الاستجابة" : "Response Format")</label>
+            <div class="format-buttons">
+                <button type="button" class="format-btn" data-format="tables">
+                    <span class="format-icon">📊</span>
+                    <span>@(isArabic ? "جداول" : "Tables")</span>
+                </button>
+                <button type="button" class="format-btn" data-format="charts">
+                    <span class="format-icon">📈</span>
+                    <span>@(isArabic ? "رسوم بيانية" : "Charts")</span>
+                </button>
+                <button type="button" class="format-btn" data-format="report">
+                    <span class="format-icon">📄</span>
+                    <span>@(isArabic ? "تقرير" : "Report")</span>
+                </button>
+                <button type="button" class="format-btn" data-format="email">
+                    <span class="format-icon">📧</span>
+                    <span>@(isArabic ? "بريد إلكتروني" : "Email")</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" id="submit-btn" class="btn btn-primary">
+                @(isArabic ? "إرسال" : "Submit")
+            </button>
+            <div class="share-container">
+                <button type="button" id="share-btn" class="btn btn-secondary" disabled>
+                    @(isArabic ? "مشاركة" : "Share")
+                </button>
+                <div id="share-menu" class="share-menu">
+                    <button type="button" class="share-option" data-action="email">
+                        <span class="share-icon">📧</span>
+                        <span>@(isArabic ? "إرسال بريد إلكتروني" : "Send Email")</span>
+                    </button>
+                    <button type="button" class="share-option" data-action="download">
+                        <span class="share-icon">💾</span>
+                        <span>@(isArabic ? "تحميل الملف" : "Download File")</span>
+                    </button>
+                    <button type="button" class="share-option" data-action="print">
+                        <span class="share-icon">🖨️</span>
+                        <span>@(isArabic ? "طباعة الملف" : "Print File")</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Response Display -->
+        <div id="response-container" class="response-container" style="display: none;">
+            <h3 class="response-title">@(isArabic ? "الاستجابة" : "Response")</h3>
+            <div id="response-text" class="response-text"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Store language for JavaScript
+        window.appLanguage = '@language';
+        window.isArabic = @(isArabic ? "true" : "false");
+    </script>
+}
