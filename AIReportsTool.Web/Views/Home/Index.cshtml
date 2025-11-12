@@ -5,86 +5,249 @@
 }
 
 <div class="home-content">
-    <!-- Welcome Section -->
-    <div class="welcome-section">
-        <h2 class="section-title">@(isArabic ? "مرحباً في أداة التقارير بالذكاء الاصطناعي" : "Welcome to AI Reports Tool")</h2>
-        <p class="section-description">
-            @(isArabic ? "قم بإنشاء تقارير ذكية باستخدام الذكاء الاصطناعي. اختر تطبيقاً من القائمة الجانبية، أدخل موضوعك وطلبك، واحصل على تقارير فورية." : "Generate intelligent reports using AI. Select an application from the sidebar, enter your subject and request, and get instant reports.")
-        </p>
-    </div>
-
-    <!-- Request Form -->
-    <div class="request-form">
-        <input type="hidden" id="selected-appid" value="" />
-        <input type="hidden" id="selected-appname" value="" />
-
-        <div class="form-group">
-            <label for="subject" class="form-label">
-                @(isArabic ? "الموضوع" : "Subject")
-            </label>
-            <input type="text" id="subject" class="form-control"
-                   placeholder="@(isArabic ? "أدخل موضوع التقرير" : "Enter report subject")" />
+    <!-- Landing Page - Visible by default -->
+    <div id="landing-page" class="landing-page">
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <div class="hero-icon">🤖</div>
+            <h1 class="hero-title">@(isArabic ? "أداة التقارير بالذكاء الاصطناعي" : "AI Reports Tool")</h1>
+            <p class="hero-subtitle">
+                @(isArabic ? "قم بإنشاء تقارير ذكية وتحليلات دقيقة باستخدام قوة الذكاء الاصطناعي" : "Generate intelligent reports and accurate analytics powered by AI")
+            </p>
         </div>
 
-        <div class="form-group">
-            <label for="request-text" class="form-label">
-                @(isArabic ? "الطلب" : "Request")
-            </label>
-            <textarea id="request-text" class="form-control" rows="6"
-                      placeholder="@(isArabic ? "اكتب تفاصيل طلبك هنا..." : "Write your request details here...")"></textarea>
-        </div>
+        <!-- Features Grid -->
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3 class="feature-title">@(isArabic ? "سريع وفوري" : "Fast & Instant")</h3>
+                <p class="feature-description">
+                    @(isArabic ? "احصل على تقاريرك في ثوانٍ معدودة" : "Get your reports in seconds")
+                </p>
+            </div>
 
-        <div class="form-group">
-            <label class="form-label">@(isArabic ? "تنسيق الاستجابة" : "Response Format")</label>
-            <div class="format-buttons">
-                <button type="button" class="format-btn" data-format="tables">
-                    <span class="format-icon">📊</span>
-                    <span>@(isArabic ? "جداول" : "Tables")</span>
-                </button>
-                <button type="button" class="format-btn" data-format="charts">
-                    <span class="format-icon">📈</span>
-                    <span>@(isArabic ? "رسوم بيانية" : "Charts")</span>
-                </button>
-                <button type="button" class="format-btn" data-format="report">
-                    <span class="format-icon">📄</span>
-                    <span>@(isArabic ? "تقرير" : "Report")</span>
-                </button>
-                <button type="button" class="format-btn" data-format="email">
-                    <span class="format-icon">📧</span>
-                    <span>@(isArabic ? "بريد إلكتروني" : "Email")</span>
-                </button>
+            <div class="feature-card">
+                <div class="feature-icon">🌐</div>
+                <h3 class="feature-title">@(isArabic ? "متعدد اللغات" : "Multi-Language")</h3>
+                <p class="feature-description">
+                    @(isArabic ? "دعم كامل للغتين العربية والإنجليزية" : "Full support for Arabic and English")
+                </p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3 class="feature-title">@(isArabic ? "تنسيقات متعددة" : "Multiple Formats")</h3>
+                <p class="feature-description">
+                    @(isArabic ? "جداول، رسوم بيانية، تقارير، وبريد إلكتروني" : "Tables, charts, reports, and email")
+                </p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🔄</div>
+                <h3 class="feature-title">@(isArabic ? "سهل المشاركة" : "Easy Sharing")</h3>
+                <p class="feature-description">
+                    @(isArabic ? "شارك تقاريرك عبر البريد أو التحميل أو الطباعة" : "Share via email, download, or print")
+                </p>
             </div>
         </div>
 
-        <div class="form-actions">
-            <button type="button" id="submit-btn" class="btn btn-primary">
-                @(isArabic ? "إرسال" : "Submit")
-            </button>
-            <div class="share-container">
-                <button type="button" id="share-btn" class="btn btn-secondary" disabled>
-                    @(isArabic ? "مشاركة" : "Share")
-                </button>
-                <div id="share-menu" class="share-menu">
-                    <button type="button" class="share-option" data-action="email">
-                        <span class="share-icon">📧</span>
-                        <span>@(isArabic ? "إرسال بريد إلكتروني" : "Send Email")</span>
-                    </button>
-                    <button type="button" class="share-option" data-action="download">
-                        <span class="share-icon">💾</span>
-                        <span>@(isArabic ? "تحميل الملف" : "Download File")</span>
-                    </button>
-                    <button type="button" class="share-option" data-action="print">
-                        <span class="share-icon">🖨️</span>
-                        <span>@(isArabic ? "طباعة الملف" : "Print File")</span>
-                    </button>
+        <!-- How to Use Guide -->
+        <div class="guide-section">
+            <h2 class="guide-title">
+                <span class="guide-icon">📖</span>
+                @(isArabic ? "كيفية الاستخدام" : "How to Use")
+            </h2>
+
+            <div class="steps-container">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-icon">📱</div>
+                        <h3 class="step-title">@(isArabic ? "اختر التطبيق" : "Select Application")</h3>
+                        <p class="step-description">
+                            @(isArabic ? "من القائمة الجانبية، اختر التطبيق الذي تريد إنشاء تقرير له من بين 5 تطبيقات متاحة" : "From the sidebar, choose the application you want to generate a report for from 5 available apps")
+                        </p>
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-icon">✍️</div>
+                        <h3 class="step-title">@(isArabic ? "أدخل التفاصيل" : "Enter Details")</h3>
+                        <p class="step-description">
+                            @(isArabic ? "اكتب موضوع التقرير وتفاصيل طلبك. كن دقيقاً للحصول على أفضل النتائج" : "Write the report subject and your request details. Be specific for best results")
+                        </p>
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-icon">🎨</div>
+                        <h3 class="step-title">@(isArabic ? "اختر التنسيق" : "Choose Format")</h3>
+                        <p class="step-description">
+                            @(isArabic ? "حدد نوع التقرير الذي تريده:" : "Select the type of report you want:")
+                        </p>
+                        <div class="format-examples">
+                            <div class="format-example">
+                                <span class="format-example-icon">📊</span>
+                                <span>@(isArabic ? "جداول - للبيانات المنظمة" : "Tables - For organized data")</span>
+                            </div>
+                            <div class="format-example">
+                                <span class="format-example-icon">📈</span>
+                                <span>@(isArabic ? "رسوم بيانية - للتحليل المرئي" : "Charts - For visual analysis")</span>
+                            </div>
+                            <div class="format-example">
+                                <span class="format-example-icon">📄</span>
+                                <span>@(isArabic ? "تقرير - للمستندات الشاملة" : "Report - For comprehensive documents")</span>
+                            </div>
+                            <div class="format-example">
+                                <span class="format-example-icon">📧</span>
+                                <span>@(isArabic ? "بريد إلكتروني - للمراسلات الرسمية" : "Email - For official correspondence")</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-icon">🚀</div>
+                        <h3 class="step-title">@(isArabic ? "أرسل واحصل على النتيجة" : "Submit & Get Results")</h3>
+                        <p class="step-description">
+                            @(isArabic ? "اضغط على زر الإرسال واحصل على تقريرك فوراً. يمكنك بعدها مشاركته أو تحميله أو طباعته" : "Click submit and get your report instantly. You can then share, download, or print it")
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Response Display -->
-        <div id="response-container" class="response-container" style="display: none;">
-            <h3 class="response-title">@(isArabic ? "الاستجابة" : "Response")</h3>
-            <div id="response-text" class="response-text"></div>
+        <!-- Quick Tips -->
+        <div class="tips-section">
+            <h3 class="tips-title">
+                <span class="tips-icon">💡</span>
+                @(isArabic ? "نصائح سريعة" : "Quick Tips")
+            </h3>
+            <div class="tips-grid">
+                <div class="tip-item">
+                    <span class="tip-bullet">✓</span>
+                    <span>@(isArabic ? "يمكنك الوصول إلى طلباتك السابقة من قسم 'الأخيرة' في القائمة الجانبية" : "Access your previous requests from 'Recents' in the sidebar")</span>
+                </div>
+                <div class="tip-item">
+                    <span class="tip-bullet">✓</span>
+                    <span>@(isArabic ? "استخدم زر التبديل اللغوي في الأعلى للتنقل بين العربية والإنجليزية" : "Use the language toggle at the top to switch between Arabic and English")</span>
+                </div>
+                <div class="tip-item">
+                    <span class="tip-bullet">✓</span>
+                    <span>@(isArabic ? "كل تطبيق مخصص لنوع معين من التقارير لنتائج أفضل" : "Each app is specialized for specific report types for better results")</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Call to Action -->
+        <div class="cta-section">
+            <div class="cta-content">
+                <h2 class="cta-title">@(isArabic ? "جاهز للبدء؟" : "Ready to Get Started?")</h2>
+                <p class="cta-description">
+                    @(isArabic ? "اختر تطبيقاً من القائمة الجانبية لبدء إنشاء تقريرك الأول" : "Select an application from the sidebar to start creating your first report")
+                </p>
+                <div class="cta-arrow">👉</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Request Form - Hidden by default, shown when app/recent selected -->
+    <div id="request-form-section" class="request-form-section" style="display: none;">
+        <!-- Back Button -->
+        <button type="button" id="back-to-home-btn" class="back-btn">
+            <span class="back-icon">@(isArabic ? "→" : "←")</span>
+            <span>@(isArabic ? "العودة للرئيسية" : "Back to Home")</span>
+        </button>
+
+        <!-- Selected App Header -->
+        <div id="selected-app-header" class="selected-app-header">
+            <div class="selected-app-icon" id="selected-app-icon">📱</div>
+            <div class="selected-app-info">
+                <h2 class="selected-app-name" id="selected-app-display-name">@(isArabic ? "التطبيق المحدد" : "Selected Application")</h2>
+                <p class="selected-app-hint">@(isArabic ? "املأ النموذج أدناه لإنشاء تقريرك" : "Fill the form below to create your report")</p>
+            </div>
+        </div>
+
+        <div class="request-form">
+            <input type="hidden" id="selected-appid" value="" />
+            <input type="hidden" id="selected-appname" value="" />
+
+            <div class="form-group">
+                <label for="subject" class="form-label">
+                    @(isArabic ? "الموضوع" : "Subject")
+                    <span class="required-mark">*</span>
+                </label>
+                <input type="text" id="subject" class="form-control"
+                       placeholder="@(isArabic ? "أدخل موضوع التقرير" : "Enter report subject")" />
+            </div>
+
+            <div class="form-group">
+                <label for="request-text" class="form-label">
+                    @(isArabic ? "الطلب" : "Request")
+                    <span class="required-mark">*</span>
+                </label>
+                <textarea id="request-text" class="form-control" rows="6"
+                          placeholder="@(isArabic ? "اكتب تفاصيل طلبك هنا..." : "Write your request details here...")"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">@(isArabic ? "تنسيق الاستجابة" : "Response Format")</label>
+                <div class="format-buttons">
+                    <button type="button" class="format-btn" data-format="tables">
+                        <span class="format-icon">📊</span>
+                        <span>@(isArabic ? "جداول" : "Tables")</span>
+                    </button>
+                    <button type="button" class="format-btn" data-format="charts">
+                        <span class="format-icon">📈</span>
+                        <span>@(isArabic ? "رسوم بيانية" : "Charts")</span>
+                    </button>
+                    <button type="button" class="format-btn" data-format="report">
+                        <span class="format-icon">📄</span>
+                        <span>@(isArabic ? "تقرير" : "Report")</span>
+                    </button>
+                    <button type="button" class="format-btn" data-format="email">
+                        <span class="format-icon">📧</span>
+                        <span>@(isArabic ? "بريد إلكتروني" : "Email")</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" id="submit-btn" class="btn btn-primary">
+                    @(isArabic ? "إرسال" : "Submit")
+                </button>
+                <div class="share-container">
+                    <button type="button" id="share-btn" class="btn btn-secondary" disabled>
+                        @(isArabic ? "مشاركة" : "Share")
+                    </button>
+                    <div id="share-menu" class="share-menu">
+                        <button type="button" class="share-option" data-action="email">
+                            <span class="share-icon">📧</span>
+                            <span>@(isArabic ? "إرسال بريد إلكتروني" : "Send Email")</span>
+                        </button>
+                        <button type="button" class="share-option" data-action="download">
+                            <span class="share-icon">💾</span>
+                            <span>@(isArabic ? "تحميل الملف" : "Download File")</span>
+                        </button>
+                        <button type="button" class="share-option" data-action="print">
+                            <span class="share-icon">🖨️</span>
+                            <span>@(isArabic ? "طباعة الملف" : "Print File")</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Response Display -->
+            <div id="response-container" class="response-container" style="display: none;">
+                <h3 class="response-title">@(isArabic ? "الاستجابة" : "Response")</h3>
+                <div id="response-text" class="response-text"></div>
+            </div>
         </div>
     </div>
 </div>

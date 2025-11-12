@@ -19,6 +19,74 @@ function initializeApp() {
     loadApplications();
     loadRecents();
     setupEventListeners();
+    setupHomeLink();
+}
+
+// Setup home link to show landing page
+function setupHomeLink() {
+    const homeLinks = document.querySelectorAll('a[href="/"]');
+    homeLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            showLandingPage();
+        });
+    });
+}
+
+// Show landing page
+function showLandingPage() {
+    const landingPage = document.getElementById('landing-page');
+    const formSection = document.getElementById('request-form-section');
+
+    if (landingPage && formSection) {
+        landingPage.style.display = 'block';
+        formSection.style.display = 'none';
+
+        // Clear form
+        clearForm();
+
+        // Remove active class from all sidebar links
+        const allLinks = document.querySelectorAll('.nav-link');
+        allLinks.forEach(link => link.classList.remove('active'));
+
+        // Add active class to home link
+        const homeLink = document.querySelector('a[href="/"]');
+        if (homeLink) {
+            homeLink.classList.add('active');
+        }
+    }
+}
+
+// Show form section
+function showFormSection() {
+    const landingPage = document.getElementById('landing-page');
+    const formSection = document.getElementById('request-form-section');
+
+    if (landingPage && formSection) {
+        landingPage.style.display = 'none';
+        formSection.style.display = 'block';
+
+        // Scroll to top of form
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+// Clear form
+function clearForm() {
+    selectedAppId = null;
+    selectedAppName = null;
+    selectedFormat = null;
+
+    document.getElementById('selected-appid').value = '';
+    document.getElementById('selected-appname').value = '';
+    document.getElementById('subject').value = '';
+    document.getElementById('request-text').value = '';
+    document.getElementById('response-container').style.display = 'none';
+    document.getElementById('share-btn').disabled = true;
+
+    // Clear format selection
+    const formatButtons = document.querySelectorAll('.format-btn');
+    formatButtons.forEach(btn => btn.classList.remove('selected'));
 }
 
 // Setup all event listeners
@@ -53,6 +121,12 @@ function setupEventListeners() {
             handleShareAction(action);
         });
     });
+
+    // Back to home button
+    const backBtn = document.getElementById('back-to-home-btn');
+    if (backBtn) {
+        backBtn.addEventListener('click', showLandingPage);
+    }
 
     // Close share menu when clicking outside
     document.addEventListener('click', function (event) {
@@ -141,20 +215,35 @@ function selectApplication(app) {
     selectedAppId = app.AppId;
     selectedAppName = window.isArabic ? app.AppNameAr : app.AppNameEn;
 
-    // Update UI to show selected app
+    // Update hidden fields
     document.getElementById('selected-appid').value = selectedAppId;
     document.getElementById('selected-appname').value = selectedAppName;
+
+    // Update app header in form section
+    const appNameElement = document.getElementById('selected-app-display-name');
+    const appIconElement = document.getElementById('selected-app-icon');
+    if (appNameElement) {
+        appNameElement.textContent = selectedAppName;
+    }
+    if (appIconElement) {
+        appIconElement.textContent = getAppIcon(app.AppId);
+    }
 
     // Highlight selected app
     const allLinks = document.querySelectorAll('#applications-list .nav-link');
     allLinks.forEach(link => link.classList.remove('active'));
     event.target.closest('.nav-link').classList.add('active');
 
-    // Show message
-    showMessage('success', window.isArabic ?
-        `تم اختيار التطبيق: ${selectedAppName}` :
-        `Selected application: ${selectedAppName}`
-    );
+    // Show form section
+    showFormSection();
+
+    // Show success message after transition
+    setTimeout(() => {
+        showMessage('success', window.isArabic ?
+            `تم اختيار التطبيق: ${selectedAppName}` :
+            `Selected application: ${selectedAppName}`
+        );
+    }, 300);
 }
 
 // Load a recent request into the form
@@ -162,8 +251,21 @@ function loadRecentRequest(recent) {
     selectedAppId = recent.AppId;
     selectedAppName = window.isArabic ? recent.AppNameAr : recent.AppNameEn;
 
+    // Update hidden fields
     document.getElementById('selected-appid').value = selectedAppId;
     document.getElementById('selected-appname').value = selectedAppName;
+
+    // Update app header in form section
+    const appNameElement = document.getElementById('selected-app-display-name');
+    const appIconElement = document.getElementById('selected-app-icon');
+    if (appNameElement) {
+        appNameElement.textContent = selectedAppName;
+    }
+    if (appIconElement) {
+        appIconElement.textContent = getAppIcon(recent.AppId);
+    }
+
+    // Fill form fields
     document.getElementById('subject').value = recent.Subject;
     document.getElementById('request-text').value = recent.Details;
 
@@ -172,14 +274,16 @@ function loadRecentRequest(recent) {
     allLinks.forEach(link => link.classList.remove('active'));
     event.target.closest('.nav-link').classList.add('active');
 
-    // Show message
-    showMessage('success', window.isArabic ?
-        'تم تحميل الطلب السابق' :
-        'Previous request loaded'
-    );
+    // Show form section
+    showFormSection();
 
-    // Scroll to form
-    document.getElementById('subject').scrollIntoView({ behavior: 'smooth' });
+    // Show success message after transition
+    setTimeout(() => {
+        showMessage('success', window.isArabic ?
+            'تم تحميل الطلب السابق' :
+            'Previous request loaded'
+        );
+    }, 300);
 }
 
 // Handle form submission
