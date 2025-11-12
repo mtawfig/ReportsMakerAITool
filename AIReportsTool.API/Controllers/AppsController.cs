@@ -53,9 +53,7 @@ namespace AIReportsTool.API.Controllers
                 {
                     apps.Add(new AppModel
                     {
-                        AppId = OracleDbService.GetColumnValue<decimal>(row, "APPID", 0) != 0
-                            ? Convert.ToInt32(OracleDbService.GetColumnValue<decimal>(row, "APPID", 0))
-                            : 0,
+                        AppId = OracleDbService.GetColumnValue<int>(row, "APPID", 0),
                         AppNameEn = OracleDbService.GetColumnValue<string>(row, "APPNAMEEN", string.Empty) ?? string.Empty,
                         AppNameAr = OracleDbService.GetColumnValue<string>(row, "APPNAMEAR", string.Empty) ?? string.Empty,
                         AppUrl = OracleDbService.GetColumnValue<string>(row, "APPURL", string.Empty) ?? string.Empty,

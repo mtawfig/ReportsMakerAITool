@@ -142,7 +142,7 @@ namespace AIReportsTool.API.Services
         }
 
         /// <summary>
-        /// Safely gets a column value from a DataRow, handling missing columns
+        /// Safely gets a column value from a DataRow, handling missing columns and type conversions
         /// </summary>
         public static T? GetColumnValue<T>(DataRow row, string columnName, T? defaultValue = default)
         {
@@ -159,10 +159,25 @@ namespace AIReportsTool.API.Services
                     return defaultValue;
                 }
 
+                // Handle type conversion properly
+                if (typeof(T) == value.GetType())
+                {
+                    return (T)value;
+                }
+
+                // Use Convert.ChangeType for numeric and string conversions
+                if (typeof(T).IsPrimitive || typeof(T) == typeof(decimal) || typeof(T) == typeof(string))
+                {
+                    return (T)Convert.ChangeType(value, typeof(T));
+                }
+
+                // Fallback to direct cast for other types
                 return (T)value;
             }
-            catch
+            catch (Exception ex)
             {
+                // Log the actual error for debugging
+                System.Diagnostics.Debug.WriteLine($"GetColumnValue failed for column '{columnName}': {ex.Message}");
                 return defaultValue;
             }
         }
