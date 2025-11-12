@@ -42,7 +42,9 @@ namespace AIReportsTool.API.Services
                 using var adapter = new OracleDataAdapter(command);
                 await Task.Run(() => adapter.Fill(dataTable));
 
-                _logger.LogInformation($"Successfully executed {procedureName}, returned {dataTable.Rows.Count} rows");
+                // Log column names for debugging
+                var columnNames = string.Join(", ", dataTable.Columns.Cast<DataColumn>().Select(c => c.ColumnName));
+                _logger.LogInformation($"Successfully executed {procedureName}, returned {dataTable.Rows.Count} rows with columns: {columnNames}");
             }
             catch (Exception ex)
             {
@@ -137,6 +139,32 @@ namespace AIReportsTool.API.Services
             }
 
             return param;
+        }
+
+        /// <summary>
+        /// Safely gets a column value from a DataRow, handling missing columns
+        /// </summary>
+        public static T? GetColumnValue<T>(DataRow row, string columnName, T? defaultValue = default)
+        {
+            try
+            {
+                if (!row.Table.Columns.Contains(columnName))
+                {
+                    return defaultValue;
+                }
+
+                var value = row[columnName];
+                if (value == null || value == DBNull.Value)
+                {
+                    return defaultValue;
+                }
+
+                return (T)value;
+            }
+            catch
+            {
+                return defaultValue;
+            }
         }
     }
 }

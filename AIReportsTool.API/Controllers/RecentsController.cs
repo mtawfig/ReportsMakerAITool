@@ -49,20 +49,28 @@ namespace AIReportsTool.API.Controllers
                     refCursorParam
                 );
 
+                // Log available columns for debugging
+                var columnNames = string.Join(", ", dataTable.Columns.Cast<System.Data.DataColumn>().Select(c => c.ColumnName));
+                _logger.LogInformation($"RecentsController received columns: {columnNames}");
+
                 // Map DataTable to RecentRequestModel list
                 var recents = new List<RecentRequestModel>();
                 foreach (System.Data.DataRow row in dataTable.Rows)
                 {
                     recents.Add(new RecentRequestModel
                     {
-                        DateTime = row["REQUEST_DATETIME"]?.ToString() ?? string.Empty,
-                        AppId = Convert.ToInt32(row["APP_ID"]),
-                        AppNameEn = row["APP_NAME_EN"]?.ToString() ?? string.Empty,
-                        AppNameAr = row["APP_NAME_AR"]?.ToString() ?? string.Empty,
-                        Subject = row["REQUEST_SUBJECT"]?.ToString() ?? string.Empty,
-                        Details = row["REQUEST_TEXT"]?.ToString() ?? string.Empty,
-                        Status = Convert.ToInt32(row["REQUEST_STATUS"]),
-                        Response = row["RESPONSE_TEXT"]?.ToString() ?? string.Empty
+                        DateTime = OracleDbService.GetColumnValue<string>(row, "REQUEST_DATETIME", string.Empty) ?? string.Empty,
+                        AppId = OracleDbService.GetColumnValue<decimal>(row, "APP_ID", 0) != 0
+                            ? Convert.ToInt32(OracleDbService.GetColumnValue<decimal>(row, "APP_ID", 0))
+                            : 0,
+                        AppNameEn = OracleDbService.GetColumnValue<string>(row, "APP_NAME_EN", string.Empty) ?? string.Empty,
+                        AppNameAr = OracleDbService.GetColumnValue<string>(row, "APP_NAME_AR", string.Empty) ?? string.Empty,
+                        Subject = OracleDbService.GetColumnValue<string>(row, "REQUEST_SUBJECT", string.Empty) ?? string.Empty,
+                        Details = OracleDbService.GetColumnValue<string>(row, "REQUEST_TEXT", string.Empty) ?? string.Empty,
+                        Status = OracleDbService.GetColumnValue<decimal>(row, "REQUEST_STATUS", 0) != 0
+                            ? Convert.ToInt32(OracleDbService.GetColumnValue<decimal>(row, "REQUEST_STATUS", 0))
+                            : 0,
+                        Response = OracleDbService.GetColumnValue<string>(row, "RESPONSE_TEXT", string.Empty) ?? string.Empty
                     });
                 }
 
