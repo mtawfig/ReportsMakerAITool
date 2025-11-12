@@ -22,7 +22,7 @@ namespace AIReportsTool.API.Services
                 throw new InvalidOperationException("Please replace YOUR_GEMINI_API_KEY_HERE with your actual Gemini API key in appsettings.json");
             }
 
-            _model = configuration["GeminiApi:Model"] ?? "gemini-1.5-flash";
+            _model = configuration["GeminiApi:Model"] ?? "gemini-1.5-flash-latest";
             _baseUrl = configuration["GeminiApi:BaseUrl"]
                 ?? "https://generativelanguage.googleapis.com/v1beta";
             _logger = logger;
