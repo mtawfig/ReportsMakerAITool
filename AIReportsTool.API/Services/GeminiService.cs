@@ -24,7 +24,7 @@ namespace AIReportsTool.API.Services
 
             _model = configuration["GeminiApi:Model"] ?? "gemini-1.5-flash";
             _baseUrl = configuration["GeminiApi:BaseUrl"]
-                ?? "https://generativelanguage.googleapis.com/v1";
+                ?? "https://generativelanguage.googleapis.com/v1beta";
             _logger = logger;
         }
 
