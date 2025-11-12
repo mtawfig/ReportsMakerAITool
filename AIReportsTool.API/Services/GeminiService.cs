@@ -16,7 +16,13 @@ namespace AIReportsTool.API.Services
             _httpClient = new HttpClient();
             _apiKey = configuration["GeminiApi:ApiKey"]
                 ?? throw new ArgumentNullException("Gemini API key is not configured");
-            _model = configuration["GeminiApi:Model"] ?? "gemini-pro";
+
+            if (_apiKey == "YOUR_GEMINI_API_KEY_HERE")
+            {
+                throw new InvalidOperationException("Please replace YOUR_GEMINI_API_KEY_HERE with your actual Gemini API key in appsettings.json");
+            }
+
+            _model = configuration["GeminiApi:Model"] ?? "gemini-1.5-flash";
             _baseUrl = configuration["GeminiApi:BaseUrl"]
                 ?? "https://generativelanguage.googleapis.com/v1beta";
             _logger = logger;
@@ -60,9 +66,9 @@ namespace AIReportsTool.API.Services
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    _logger.LogError("Gemini API error: {StatusCode} - {Content}",
-                        response.StatusCode, responseContent);
-                    throw new Exception($"Gemini API returned error: {response.StatusCode}");
+                    _logger.LogError("Gemini API error: {StatusCode} - {Content}. Endpoint: {Endpoint}",
+                        response.StatusCode, responseContent, endpoint);
+                    throw new Exception($"Gemini API returned error: {response.StatusCode}. Response: {responseContent}");
                 }
 
                 // Parse the response
