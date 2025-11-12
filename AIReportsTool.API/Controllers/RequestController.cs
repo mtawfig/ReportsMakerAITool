@@ -14,11 +14,16 @@ namespace AIReportsTool.API.Controllers
     public class RequestController : ControllerBase
     {
         private readonly OracleDbService _dbService;
+        private readonly GeminiService _geminiService;
         private readonly ILogger<RequestController> _logger;
 
-        public RequestController(OracleDbService dbService, ILogger<RequestController> logger)
+        public RequestController(
+            OracleDbService dbService,
+            GeminiService geminiService,
+            ILogger<RequestController> logger)
         {
             _dbService = dbService;
+            _geminiService = geminiService;
             _logger = logger;
         }
 
@@ -76,6 +81,24 @@ namespace AIReportsTool.API.Controllers
 
             try
             {
+                // Call Gemini API to generate response
+                _logger.LogInformation("Calling Gemini API for request: {Subject}", payload.Subject);
+                string geminiResponse;
+
+                try
+                {
+                    geminiResponse = await _geminiService.GenerateReportAsync(
+                        "AI Reports Tool",
+                        payload.Subject,
+                        payload.RequestText
+                    );
+                }
+                catch (Exception geminiEx)
+                {
+                    _logger.LogError(geminiEx, "Gemini API call failed");
+                    geminiResponse = $"Error generating AI response: {geminiEx.Message}";
+                }
+
                 // Create parameters for stored procedure
                 var appIdParam = OracleDbService.CreateInputParameter(
                     "p_app_id",
@@ -130,7 +153,7 @@ namespace AIReportsTool.API.Controllers
                     4000
                 );
 
-                // Execute stored procedure
+                // Execute stored procedure to insert request
                 var outParams = await _dbService.ExecuteStoredProcedureWithOutParamsAsync(
                     "P_IRT_REPORTHELPERTOOL.SP_InsertRequest",
                     appIdParam,
@@ -153,13 +176,14 @@ namespace AIReportsTool.API.Controllers
 
                 if (dbStatus == 1)
                 {
-                    // TODO: In production, this would queue the request for AI processing
-                    // For now, return a mock success response
+                    // Update the request with Gemini response
+                    await UpdateRequestResponseAsync(requestId, geminiResponse);
+
                     var response = new RequestResponseModel
                     {
                         Status = 1,
                         Message = dbMessage,
-                        ResponseText = $"Report generated successfully for '{payload.Subject}'. Your request has been processed and saved with ID: {requestId}."
+                        ResponseText = geminiResponse
                     };
 
                     return Ok(response);
@@ -189,6 +213,60 @@ namespace AIReportsTool.API.Controllers
                 };
 
                 return StatusCode(500, response);
+            }
+        }
+
+        /// <summary>
+        /// Updates a request with the Gemini API response
+        /// </summary>
+        private async Task UpdateRequestResponseAsync(int requestId, string responseText)
+        {
+            try
+            {
+                var requestIdParam = OracleDbService.CreateInputParameter(
+                    "p_request_id",
+                    OracleDbType.Int32,
+                    requestId
+                );
+
+                var responseTextParam = OracleDbService.CreateInputParameter(
+                    "p_response_text",
+                    OracleDbType.Clob,
+                    responseText
+                );
+
+                var statusParam = OracleDbService.CreateInputParameter(
+                    "p_status",
+                    OracleDbType.Int32,
+                    1 // Mark as completed
+                );
+
+                var dbStatusParam = OracleDbService.CreateOutputParameter(
+                    "p_db_status",
+                    OracleDbType.Int32
+                );
+
+                var messageParam = OracleDbService.CreateOutputParameter(
+                    "p_message",
+                    OracleDbType.Varchar2,
+                    4000
+                );
+
+                await _dbService.ExecuteStoredProcedureWithOutParamsAsync(
+                    "P_IRT_REPORTHELPERTOOL.SP_UpdateRequestResponse",
+                    requestIdParam,
+                    responseTextParam,
+                    statusParam,
+                    dbStatusParam,
+                    messageParam
+                );
+
+                _logger.LogInformation("Updated request {RequestId} with Gemini response", requestId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating request {RequestId} with response", requestId);
+                // Don't throw - we still want to return the response to the user even if update fails
             }
         }
     }
