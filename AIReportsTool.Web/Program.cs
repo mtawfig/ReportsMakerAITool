@@ -1,7 +1,13 @@
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(options =>
+    {
+        // Preserve property names (don't use camelCase)
+        // This ensures JSON returned from controllers matches what JavaScript expects
+        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+    });
 
 // Configure HTTP Client for API calls
 builder.Services.AddHttpClient();
@@ -23,7 +29,13 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// Only redirect to HTTPS in production
+// In development, allow both HTTP and HTTPS
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseStaticFiles();
 
 app.UseRouting();
