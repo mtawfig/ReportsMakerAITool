@@ -88,7 +88,7 @@ namespace AIReportsTool.API.Controllers
                 try
                 {
                     geminiResponse = await _geminiService.GenerateReportAsync(
-                        "AI Reports Tool",
+                        "IntellegentReportMaker",
                         payload.Subject,
                         payload.RequestText
                     );
