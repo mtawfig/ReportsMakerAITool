@@ -59,18 +59,18 @@ namespace AIReportsTool.API.Controllers
                 {
                     recents.Add(new RecentRequestModel
                     {
-                        DateTime = OracleDbService.GetColumnValue<string>(row, "DATETIME", string.Empty) ?? string.Empty,
-                        AppId = OracleDbService.GetColumnValue<decimal>(row, "APPID", 0) != 0
-                            ? Convert.ToInt32(OracleDbService.GetColumnValue<decimal>(row, "APPID", 0))
+                        DateTime = OracleDbService.GetColumnValue<string>(row, "DateTime", string.Empty) ?? string.Empty,
+                        AppId = OracleDbService.GetColumnValue<decimal>(row, "AppId", 0) != 0
+                            ? Convert.ToInt32(OracleDbService.GetColumnValue<decimal>(row, "AppId", 0))
                             : 0,
-                        AppNameEn = OracleDbService.GetColumnValue<string>(row, "APPNAMEEN", string.Empty) ?? string.Empty,
-                        AppNameAr = OracleDbService.GetColumnValue<string>(row, "APPNAMEAR", string.Empty) ?? string.Empty,
-                        Subject = OracleDbService.GetColumnValue<string>(row, "SUBJECT", string.Empty) ?? string.Empty,
-                        Details = OracleDbService.GetColumnValue<string>(row, "DETAILS", string.Empty) ?? string.Empty,
-                        Status = OracleDbService.GetColumnValue<decimal>(row, "STATUS", 0) != 0
-                            ? Convert.ToInt32(OracleDbService.GetColumnValue<decimal>(row, "STATUS", 0))
+                        AppNameEn = OracleDbService.GetColumnValue<string>(row, "AppNameEn", string.Empty) ?? string.Empty,
+                        AppNameAr = OracleDbService.GetColumnValue<string>(row, "AppNameAr", string.Empty) ?? string.Empty,
+                        Subject = OracleDbService.GetColumnValue<string>(row, "Subject", string.Empty) ?? string.Empty,
+                        Details = OracleDbService.GetColumnValue<string>(row, "Details", string.Empty) ?? string.Empty,
+                        Status = OracleDbService.GetColumnValue<decimal>(row, "Status", 0) != 0
+                            ? Convert.ToInt32(OracleDbService.GetColumnValue<decimal>(row, "Status", 0))
                             : 0,
-                        Response = OracleDbService.GetColumnValue<string>(row, "RESPONSE", string.Empty) ?? string.Empty
+                        Response = OracleDbService.GetColumnValue<string>(row, "Response", string.Empty) ?? string.Empty
                     });
                 }
 
