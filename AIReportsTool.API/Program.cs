@@ -4,6 +4,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
 builder.Services.AddSingleton<OracleDbService>();
+builder.Services.AddSingleton<GeminiService>();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
