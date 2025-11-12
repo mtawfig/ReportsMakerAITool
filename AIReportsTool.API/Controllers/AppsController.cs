@@ -43,17 +43,23 @@ namespace AIReportsTool.API.Controllers
                     refCursorParam
                 );
 
+                // Log available columns for debugging
+                var columnNames = string.Join(", ", dataTable.Columns.Cast<System.Data.DataColumn>().Select(c => c.ColumnName));
+                _logger.LogInformation($"AppsController received columns: {columnNames}");
+
                 // Map DataTable to AppModel list
                 var apps = new List<AppModel>();
                 foreach (System.Data.DataRow row in dataTable.Rows)
                 {
                     apps.Add(new AppModel
                     {
-                        AppId = Convert.ToInt32(row["APP_ID"]),
-                        AppNameEn = row["APP_NAME_EN"]?.ToString() ?? string.Empty,
-                        AppNameAr = row["APP_NAME_AR"]?.ToString() ?? string.Empty,
-                        AppUrl = row["APP_URL"]?.ToString() ?? string.Empty,
-                        AppIcon = row["APP_ICON"]?.ToString() ?? string.Empty
+                        AppId = OracleDbService.GetColumnValue<decimal>(row, "APP_ID", 0) != 0
+                            ? Convert.ToInt32(OracleDbService.GetColumnValue<decimal>(row, "APP_ID", 0))
+                            : 0,
+                        AppNameEn = OracleDbService.GetColumnValue<string>(row, "APP_NAME_EN", string.Empty) ?? string.Empty,
+                        AppNameAr = OracleDbService.GetColumnValue<string>(row, "APP_NAME_AR", string.Empty) ?? string.Empty,
+                        AppUrl = OracleDbService.GetColumnValue<string>(row, "APP_URL", string.Empty) ?? string.Empty,
+                        AppIcon = OracleDbService.GetColumnValue<string>(row, "APP_ICON", string.Empty) ?? string.Empty
                     });
                 }
 
