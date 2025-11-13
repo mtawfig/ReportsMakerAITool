@@ -286,6 +286,48 @@ function loadRecentRequest(recent) {
     }, 300);
 }
 
+// Show loading overlay and disable form elements
+function showLoading() {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const requestForm = document.querySelector('.request-form');
+
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'flex';
+    }
+
+    if (requestForm) {
+        requestForm.classList.add('loading-disabled');
+    }
+
+    // Disable all form inputs and buttons
+    const inputs = document.querySelectorAll('#subject, #request-text');
+    const buttons = document.querySelectorAll('.format-btn, #submit-btn, #share-btn');
+
+    inputs.forEach(input => input.disabled = true);
+    buttons.forEach(button => button.disabled = true);
+}
+
+// Hide loading overlay and enable form elements
+function hideLoading() {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const requestForm = document.querySelector('.request-form');
+
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'none';
+    }
+
+    if (requestForm) {
+        requestForm.classList.remove('loading-disabled');
+    }
+
+    // Re-enable all form inputs and buttons
+    const inputs = document.querySelectorAll('#subject, #request-text');
+    const buttons = document.querySelectorAll('.format-btn, #submit-btn');
+
+    inputs.forEach(input => input.disabled = false);
+    buttons.forEach(button => button.disabled = false);
+}
+
 // Handle form submission
 async function handleSubmit() {
     const subject = document.getElementById('subject').value.trim();
@@ -316,10 +358,8 @@ async function handleSubmit() {
         return;
     }
 
-    // Disable submit button
-    const submitBtn = document.getElementById('submit-btn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = window.isArabic ? 'جاري الإرسال...' : 'Submitting...';
+    // Show loading overlay and disable form
+    showLoading();
 
     try {
         const payload = {
@@ -363,9 +403,8 @@ async function handleSubmit() {
             'An error occurred while submitting the request'
         );
     } finally {
-        // Re-enable submit button
-        submitBtn.disabled = false;
-        submitBtn.textContent = window.isArabic ? 'إرسال' : 'Submit';
+        // Hide loading overlay and re-enable form
+        hideLoading();
     }
 }
 
