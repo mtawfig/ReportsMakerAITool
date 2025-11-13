@@ -677,83 +677,353 @@ function handleShareAction(action) {
     }
 
     switch (action) {
-        case 'email':
-            handleEmailShare();
-            break;
-        case 'download':
-            handleDownload();
-            break;
         case 'print':
             handlePrint();
+            break;
+        case 'pdf':
+            handleSavePDF();
+            break;
+        case 'word':
+            handleSaveWord();
             break;
     }
 }
 
-// Handle email share
-function handleEmailShare() {
-    const subject = document.getElementById('subject').value;
-    const body = lastResponseText;
-    const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
-}
-
-// Handle download
-function handleDownload() {
-    const subject = document.getElementById('subject').value;
-    const content = lastResponseText;
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${subject}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    showMessage('success', window.isArabic ?
-        'تم تحميل الملف' :
-        'File downloaded'
-    );
-}
-
-// Handle print
+// Handle print - prints the formatted response with all styling
 function handlePrint() {
-    const printWindow = window.open('', '_blank');
     const subject = document.getElementById('subject').value;
-    const content = lastResponseText;
+    const responseTextElement = document.getElementById('response-text');
+
+    if (!responseTextElement) {
+        showMessage('error', window.isArabic ?
+            'لا يوجد محتوى للطباعة' :
+            'No content to print'
+        );
+        return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    const htmlContent = responseTextElement.innerHTML;
+    const isRtl = window.isArabic;
 
     printWindow.document.write(`
         <!DOCTYPE html>
-        <html>
+        <html dir="${isRtl ? 'rtl' : 'ltr'}" lang="${isRtl ? 'ar' : 'en'}">
         <head>
+            <meta charset="UTF-8">
             <title>${subject}</title>
             <style>
                 body {
-                    font-family: Arial, sans-serif;
-                    padding: 20px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+                    padding: 40px;
                     line-height: 1.6;
+                    color: #333;
+                    direction: ${isRtl ? 'rtl' : 'ltr'};
                 }
                 h1 {
                     color: #333;
-                    margin-bottom: 20px;
+                    margin-bottom: 30px;
+                    font-size: 2rem;
+                    border-bottom: 2px solid #667eea;
+                    padding-bottom: 10px;
                 }
-                .content {
-                    white-space: pre-wrap;
+                h2, h3, h4, h5, h6 {
+                    color: #333;
+                    margin-top: 1.5rem;
+                    margin-bottom: 0.75rem;
+                }
+                table {
+                    border-collapse: collapse;
+                    width: 100%;
+                    margin: 1rem 0;
+                }
+                th, td {
+                    border: 1px solid #ddd;
+                    padding: 0.75rem;
+                    text-align: ${isRtl ? 'right' : 'left'};
+                }
+                th {
+                    background-color: #667eea;
+                    color: white;
+                    font-weight: 600;
+                }
+                tr:nth-child(even) {
+                    background-color: #f9fafb;
+                }
+                code {
+                    background-color: #f3f4f6;
+                    padding: 0.2rem 0.4rem;
+                    border-radius: 3px;
+                    font-family: 'Courier New', monospace;
+                    font-size: 0.9em;
+                }
+                pre {
+                    background-color: #1e1e1e;
+                    color: #d4d4d4;
+                    padding: 1rem;
+                    border-radius: 6px;
+                    overflow-x: auto;
+                    margin: 1rem 0;
+                }
+                pre code {
+                    background: none;
+                    padding: 0;
+                    color: inherit;
+                }
+                ul, ol {
+                    margin-bottom: 1rem;
+                    padding-${isRtl ? 'right' : 'left'}: 2rem;
+                }
+                blockquote {
+                    border-${isRtl ? 'right' : 'left'}: 4px solid #667eea;
+                    margin: 1rem 0;
+                    padding: 0.5rem 1rem;
+                    background-color: #f9fafb;
+                }
+                img {
+                    max-width: 100%;
+                    height: auto;
+                }
+                .apex-chart-container {
+                    margin: 2rem 0;
+                    page-break-inside: avoid;
+                }
+                @media print {
+                    body {
+                        padding: 20px;
+                    }
+                    .apex-chart-container {
+                        break-inside: avoid;
+                    }
                 }
             </style>
         </head>
         <body>
             <h1>${subject}</h1>
-            <div class="content">${content}</div>
+            <div class="content">${htmlContent}</div>
         </body>
         </html>
     `);
     printWindow.document.close();
     printWindow.focus();
+
+    // Wait for content to load before printing
     setTimeout(() => {
         printWindow.print();
-    }, 250);
+    }, 500);
+}
+
+// Handle Save PDF - saves the formatted response as PDF
+async function handleSavePDF() {
+    const subject = document.getElementById('subject').value;
+    const responseTextElement = document.getElementById('response-text');
+
+    if (!responseTextElement) {
+        showMessage('error', window.isArabic ?
+            'لا يوجد محتوى لحفظه' :
+            'No content to save'
+        );
+        return;
+    }
+
+    // Check if html2pdf is loaded
+    if (typeof html2pdf === 'undefined') {
+        showMessage('error', window.isArabic ?
+            'مكتبة PDF غير محملة' :
+            'PDF library not loaded'
+        );
+        return;
+    }
+
+    try {
+        // Show loading message
+        showMessage('success', window.isArabic ?
+            'جاري إنشاء ملف PDF...' :
+            'Generating PDF...'
+        );
+
+        // Create a container for PDF content
+        const pdfContainer = document.createElement('div');
+        pdfContainer.style.padding = '40px';
+        pdfContainer.style.backgroundColor = 'white';
+        pdfContainer.style.direction = window.isArabic ? 'rtl' : 'ltr';
+
+        // Add title
+        const titleElement = document.createElement('h1');
+        titleElement.textContent = subject;
+        titleElement.style.marginBottom = '20px';
+        titleElement.style.borderBottom = '2px solid #667eea';
+        titleElement.style.paddingBottom = '10px';
+        pdfContainer.appendChild(titleElement);
+
+        // Clone the response content
+        const contentClone = responseTextElement.cloneNode(true);
+        pdfContainer.appendChild(contentClone);
+
+        // PDF options
+        const options = {
+            margin: [15, 15, 15, 15],
+            filename: `${subject}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: {
+                scale: 2,
+                useCORS: true,
+                logging: false
+            },
+            jsPDF: {
+                unit: 'mm',
+                format: 'a4',
+                orientation: 'portrait'
+            }
+        };
+
+        // Generate and save PDF
+        await html2pdf().set(options).from(pdfContainer).save();
+
+        showMessage('success', window.isArabic ?
+            'تم حفظ ملف PDF' :
+            'PDF saved successfully'
+        );
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        showMessage('error', window.isArabic ?
+            'حدث خطأ أثناء إنشاء PDF' :
+            'Error generating PDF'
+        );
+    }
+}
+
+// Handle Save Word - saves the formatted response as Word document
+function handleSaveWord() {
+    const subject = document.getElementById('subject').value;
+    const responseTextElement = document.getElementById('response-text');
+
+    if (!responseTextElement) {
+        showMessage('error', window.isArabic ?
+            'لا يوجد محتوى لحفظه' :
+            'No content to save'
+        );
+        return;
+    }
+
+    try {
+        const htmlContent = responseTextElement.innerHTML;
+        const isRtl = window.isArabic;
+
+        // Create a complete HTML document for Word
+        const wordContent = `
+            <!DOCTYPE html>
+            <html xmlns:o="urn:schemas-microsoft-com:office:office"
+                  xmlns:w="urn:schemas-microsoft-com:office:word"
+                  xmlns="http://www.w3.org/TR/REC-html40">
+            <head>
+                <meta charset="utf-8">
+                <title>${subject}</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        line-height: 1.6;
+                        direction: ${isRtl ? 'rtl' : 'ltr'};
+                        padding: 40px;
+                    }
+                    h1 {
+                        color: #333;
+                        margin-bottom: 20px;
+                        border-bottom: 2px solid #667eea;
+                        padding-bottom: 10px;
+                        font-size: 24pt;
+                    }
+                    h2 { font-size: 18pt; margin-top: 20px; }
+                    h3 { font-size: 14pt; margin-top: 16px; }
+                    h4 { font-size: 12pt; margin-top: 14px; }
+                    table {
+                        border-collapse: collapse;
+                        width: 100%;
+                        margin: 10px 0;
+                    }
+                    th, td {
+                        border: 1px solid #ddd;
+                        padding: 8px;
+                        text-align: ${isRtl ? 'right' : 'left'};
+                    }
+                    th {
+                        background-color: #667eea;
+                        color: white;
+                        font-weight: bold;
+                    }
+                    tr:nth-child(even) {
+                        background-color: #f9fafb;
+                    }
+                    code {
+                        background-color: #f3f4f6;
+                        padding: 2px 4px;
+                        border-radius: 3px;
+                        font-family: Courier New, monospace;
+                    }
+                    pre {
+                        background-color: #f5f5f5;
+                        padding: 10px;
+                        border: 1px solid #ddd;
+                        border-radius: 4px;
+                        overflow-x: auto;
+                    }
+                    pre code {
+                        background: none;
+                        padding: 0;
+                    }
+                    ul, ol {
+                        margin: 10px 0;
+                        padding-${isRtl ? 'right' : 'left'}: 30px;
+                    }
+                    blockquote {
+                        border-${isRtl ? 'right' : 'left'}: 4px solid #667eea;
+                        margin: 10px 0;
+                        padding: 5px 10px;
+                        background-color: #f9fafb;
+                    }
+                    img {
+                        max-width: 100%;
+                        height: auto;
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>${subject}</h1>
+                ${htmlContent}
+            </body>
+            </html>
+        `;
+
+        // Create blob with Word MIME type
+        const blob = new Blob(['\ufeff', wordContent], {
+            type: 'application/msword'
+        });
+
+        // Create download link
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${subject}.doc`;
+
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Clean up
+        URL.revokeObjectURL(url);
+
+        showMessage('success', window.isArabic ?
+            'تم حفظ ملف Word' :
+            'Word document saved successfully'
+        );
+    } catch (error) {
+        console.error('Error generating Word document:', error);
+        showMessage('error', window.isArabic ?
+            'حدث خطأ أثناء إنشاء ملف Word' :
+            'Error generating Word document'
+        );
+    }
 }
 
 // Show message

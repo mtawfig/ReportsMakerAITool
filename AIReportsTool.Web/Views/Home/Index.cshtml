@@ -229,17 +229,17 @@
                         <span>@(isArabic ? "مشاركة" : "Share")</span>
                     </button>
                     <div id="share-menu" class="share-menu">
-                        <button type="button" class="share-option" data-action="email">
-                            <span class="share-icon">📧</span>
-                            <span>@(isArabic ? "إرسال بريد إلكتروني" : "Send Email")</span>
-                        </button>
-                        <button type="button" class="share-option" data-action="download">
-                            <span class="share-icon">💾</span>
-                            <span>@(isArabic ? "تحميل الملف" : "Download File")</span>
-                        </button>
                         <button type="button" class="share-option" data-action="print">
                             <span class="share-icon">🖨️</span>
-                            <span>@(isArabic ? "طباعة الملف" : "Print File")</span>
+                            <span>@(isArabic ? "طباعة" : "Print")</span>
+                        </button>
+                        <button type="button" class="share-option" data-action="pdf">
+                            <span class="share-icon">📄</span>
+                            <span>@(isArabic ? "حفظ PDF" : "Save PDF")</span>
+                        </button>
+                        <button type="button" class="share-option" data-action="word">
+                            <span class="share-icon">📝</span>
+                            <span>@(isArabic ? "حفظ Word" : "Save Word")</span>
                         </button>
                     </div>
                 </div>
@@ -267,6 +267,8 @@
     <script src="https://cdn.jsdelivr.net/npm/marked@11.1.0/marked.min.js"></script>
     <!-- ApexCharts for chart rendering -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.1/dist/apexcharts.min.js"></script>
+    <!-- html2pdf.js for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script>
         // Store language for JavaScript
         window.appLanguage = '@language';
