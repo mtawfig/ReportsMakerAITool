@@ -444,9 +444,9 @@ function displayResponse(responseText) {
 
 // Detect and render charts from Gemini response
 function detectAndRenderCharts(responseText, containerElement) {
-    if (typeof ApexCharts === 'undefined') {
-        console.log('ApexCharts library not loaded');
-        return; // ApexCharts not loaded
+    if (typeof Chart === 'undefined') {
+        console.log('Chart.js library not loaded');
+        return;
     }
 
     console.log('Detecting charts in response...');
@@ -614,132 +614,119 @@ function extractChartDataFromTables(containerElement, originalText) {
     };
 }
 
-// Render chart using ApexCharts
+// Render chart using Chart.js
 function renderChart(chartData, containerElement) {
     try {
-        console.log('Rendering chart:', chartData);
+        console.log('Rendering chart with Chart.js:', chartData);
 
-        // Create chart container
+        // Create chart container div
+        const chartWrapper = document.createElement('div');
+        chartWrapper.className = 'chart-container';
+
+        // Add title
+        const chartTitle = document.createElement('h3');
+        chartTitle.textContent = chartData.title || 'Chart';
+        chartTitle.style.textAlign = 'center';
+        chartTitle.style.marginBottom = '1rem';
+        chartTitle.style.fontSize = '1.25rem';
+        chartTitle.style.fontWeight = '600';
+        chartTitle.style.color = '#333';
+        chartWrapper.appendChild(chartTitle);
+
+        // Create canvas element
+        const canvas = document.createElement('canvas');
         const chartId = 'chart-' + Date.now();
-        const chartContainer = document.createElement('div');
-        chartContainer.id = chartId;
-        chartContainer.className = 'apex-chart-container';
-        containerElement.appendChild(chartContainer);
+        canvas.id = chartId;
+        chartWrapper.appendChild(canvas);
 
-        // Prepare chart options based on type
-        let options = {
-            chart: {
-                type: chartData.chartType === 'column' ? 'bar' : chartData.chartType,
-                height: 400,
-                toolbar: {
-                    show: true,
-                    tools: {
-                        download: true,
-                        selection: false,
-                        zoom: false,
-                        zoomin: false,
-                        zoomout: false,
-                        pan: false,
-                        reset: false
+        // Append to container
+        containerElement.appendChild(chartWrapper);
+
+        // Chart colors
+        const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a', '#fee140', '#30cfd0'];
+
+        // Prepare Chart.js configuration
+        let chartType = chartData.chartType;
+        let config = {
+            type: chartType,
+            data: {
+                labels: chartData.labels,
+                datasets: [{
+                    label: chartData.title || 'Data',
+                    data: chartData.values,
+                    backgroundColor: colors,
+                    borderColor: colors,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        enabled: true
                     }
-                },
-                fontFamily: 'inherit'
-            },
-            title: {
-                text: chartData.title || 'Chart',
-                align: 'center',
-                style: {
-                    fontSize: '18px',
-                    fontWeight: 'bold',
-                    color: '#333'
                 }
-            },
-            theme: {
-                palette: 'palette1'
-            },
-            colors: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a', '#fee140', '#30cfd0']
-        };
-
-    // Configure based on chart type
-    if (chartData.chartType === 'pie' || chartData.chartType === 'donut') {
-        options.series = chartData.values;
-        options.labels = chartData.labels;
-        options.legend = {
-            position: 'bottom'
-        };
-        options.dataLabels = {
-            enabled: true,
-            formatter: function (val) {
-                return val.toFixed(1) + '%';
             }
         };
-        if (chartData.chartType === 'donut') {
-            options.plotOptions = {
-                pie: {
-                    donut: {
-                        size: '65%'
-                    }
+
+        // Customize based on chart type
+        if (chartType === 'pie' || chartType === 'doughnut') {
+            // For pie/doughnut charts, use multiple colors
+            config.data.datasets[0].backgroundColor = colors.slice(0, chartData.values.length);
+            config.data.datasets[0].borderColor = '#fff';
+            config.data.datasets[0].borderWidth = 2;
+
+            // Map 'donut' to 'doughnut' for Chart.js
+            if (chartType === 'donut') {
+                config.type = 'doughnut';
+            }
+        } else if (chartType === 'line' || chartType === 'area') {
+            // Line chart configuration
+            config.data.datasets[0].backgroundColor = chartType === 'area' ? 'rgba(102, 126, 234, 0.2)' : 'transparent';
+            config.data.datasets[0].borderColor = '#667eea';
+            config.data.datasets[0].fill = chartType === 'area';
+            config.data.datasets[0].tension = 0.4; // Smooth curves
+            config.options.scales = {
+                y: {
+                    beginAtZero: true
+                }
+            };
+
+            // Map 'area' to 'line' with fill
+            if (chartType === 'area') {
+                config.type = 'line';
+            }
+        } else if (chartType === 'bar' || chartType === 'column') {
+            // Bar/column chart configuration
+            config.data.datasets[0].backgroundColor = '#667eea';
+            config.data.datasets[0].borderColor = '#667eea';
+
+            // Map 'column' to vertical 'bar' in Chart.js
+            if (chartType === 'column') {
+                config.type = 'bar';
+                config.options.indexAxis = 'x'; // Vertical bars
+            } else {
+                config.type = 'bar';
+                config.options.indexAxis = 'y'; // Horizontal bars
+            }
+
+            config.options.scales = {
+                y: {
+                    beginAtZero: true
                 }
             };
         }
-    } else if (chartData.chartType === 'line' || chartData.chartType === 'area') {
-        options.series = [{
-            name: chartData.title || 'Data',
-            data: chartData.values
-        }];
-        options.xaxis = {
-            categories: chartData.labels
-        };
-        options.stroke = {
-            curve: 'smooth',
-            width: 3
-        };
-        options.dataLabels = {
-            enabled: false
-        };
-        if (chartData.chartType === 'area') {
-            options.fill = {
-                type: 'gradient',
-                gradient: {
-                    shadeIntensity: 1,
-                    opacityFrom: 0.7,
-                    opacityTo: 0.3
-                }
-            };
-        }
-    } else {
-        // Bar or column chart
-        options.series = [{
-            name: chartData.title || 'Data',
-            data: chartData.values
-        }];
-        options.xaxis = {
-            categories: chartData.labels
-        };
-        options.plotOptions = {
-            bar: {
-                horizontal: chartData.chartType === 'bar',
-                borderRadius: 4,
-                dataLabels: {
-                    position: 'top'
-                }
-            }
-        };
-        options.dataLabels = {
-            enabled: true,
-            offsetY: chartData.chartType === 'bar' ? 0 : -20,
-            style: {
-                fontSize: '12px',
-                colors: ['#333']
-            }
-        };
-    }
 
-        // Render the chart
-        const chart = new ApexCharts(document.getElementById(chartId), options);
-        chart.render();
+        // Create the chart
+        const ctx = canvas.getContext('2d');
+        new Chart(ctx, config);
 
-        console.log('Chart rendered successfully');
+        console.log('Chart rendered successfully with Chart.js');
     } catch (error) {
         console.error('Error rendering chart:', error);
     }
@@ -885,7 +872,7 @@ function handlePrint() {
                     max-width: 100%;
                     height: auto;
                 }
-                .apex-chart-container {
+                .chart-container {
                     margin: 2rem 0;
                     page-break-inside: avoid;
                 }
@@ -893,7 +880,7 @@ function handlePrint() {
                     body {
                         padding: 20px;
                     }
-                    .apex-chart-container {
+                    .chart-container {
                         break-inside: avoid;
                     }
                 }
