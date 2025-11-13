@@ -35,102 +35,131 @@ namespace AIReportsTool.API.Services
         /// <returns>Generated text response</returns>
         public async Task<string> GenerateContentAsync(string prompt)
         {
-            const int maxRetries = 3;
-            int retryCount = 0;
-
-            while (retryCount < maxRetries)
+            try
             {
-                try
+                _logger.LogInformation("Calling Gemini API with prompt length: {Length}", prompt.Length);
+
+                // Construct the API endpoint
+                var endpoint = $"{_baseUrl}/models/{_model}:generateContent?key={_apiKey}";
+
+                // Prepare the request payload
+                var requestBody = new
                 {
-                    _logger.LogInformation("Calling Gemini API with prompt length: {Length} (attempt {Attempt}/{Max})",
-                        prompt.Length, retryCount + 1, maxRetries);
-
-                    // Construct the API endpoint
-                    var endpoint = $"{_baseUrl}/models/{_model}:generateContent?key={_apiKey}";
-
-                    // Prepare the request payload
-                    var requestBody = new
+                    contents = new[]
                     {
-                        contents = new[]
+                        new
                         {
-                            new
+                            parts = new[]
                             {
-                                parts = new[]
+                                new { text = prompt }
+                            }
+                        }
+                    }
+                };
+
+                var jsonContent = JsonSerializer.Serialize(requestBody);
+                var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                // Retry configuration
+                const int maxRetries = 11; // total attempts (1 + 10 retries)
+                TimeSpan baseDelay = TimeSpan.FromMilliseconds(400);
+                string responseContent = string.Empty;
+
+                for (int attempt = 1; attempt <= maxRetries; attempt++)
+                {
+                    try
+                    {
+                        _logger.LogInformation("Gemini API attempt {Attempt}/{Max}", attempt, maxRetries);
+
+                        // Call Gemini API
+                        var response = await _httpClient.PostAsync(endpoint, httpContent);
+                        responseContent = await response.Content.ReadAsStringAsync();
+
+                        // Check for retry-able errors
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            var statusCode = (int)response.StatusCode;
+
+                            // Check if we should retry (429 rate limit, 503 overload, 504 timeout, 500 server error)
+                            if ((statusCode == 429 || statusCode == 503 || statusCode == 504 || statusCode == 500)
+                                && attempt < maxRetries)
+                            {
+                                // Calculate delay with exponential backoff
+                                var delay = TimeSpan.FromMilliseconds(baseDelay.TotalMilliseconds * Math.Pow(2, attempt - 1));
+
+                                _logger.LogWarning(
+                                    "Gemini API returned {StatusCode}. Retrying in {Delay}ms... (attempt {Attempt}/{Max})",
+                                    statusCode, delay.TotalMilliseconds, attempt, maxRetries);
+
+                                await Task.Delay(delay);
+                                continue; // Retry
+                            }
+
+                            // Non-retryable error or max retries reached
+                            _logger.LogError("Gemini API error: {StatusCode} - {Content}. Endpoint: {Endpoint}",
+                                response.StatusCode, responseContent, endpoint);
+                            throw new Exception($"Gemini API returned error: {response.StatusCode}. Response: {responseContent}");
+                        }
+
+                        // Success - parse the response
+                        using var jsonDoc = JsonDocument.Parse(responseContent);
+                        var root = jsonDoc.RootElement;
+
+                        // Extract the generated text
+                        if (root.TryGetProperty("candidates", out var candidates) &&
+                            candidates.GetArrayLength() > 0)
+                        {
+                            var firstCandidate = candidates[0];
+                            if (firstCandidate.TryGetProperty("content", out var content) &&
+                                content.TryGetProperty("parts", out var parts) &&
+                                parts.GetArrayLength() > 0)
+                            {
+                                var firstPart = parts[0];
+                                if (firstPart.TryGetProperty("text", out var textElement))
                                 {
-                                    new { text = prompt }
+                                    var generatedText = textElement.GetString() ?? string.Empty;
+                                    _logger.LogInformation("Gemini API returned response length: {Length} (attempt {Attempt})",
+                                        generatedText.Length, attempt);
+                                    return generatedText;
                                 }
                             }
                         }
-                    };
 
-                    var jsonContent = JsonSerializer.Serialize(requestBody);
-                    var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-
-                    // Call Gemini API
-                    var response = await _httpClient.PostAsync(endpoint, httpContent);
-                    var responseContent = await response.Content.ReadAsStringAsync();
-
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        // Check if it's a 503 (overloaded) error
-                        if ((int)response.StatusCode == 503 && retryCount < maxRetries - 1)
-                        {
-                            retryCount++;
-                            var delaySeconds = retryCount * 2; // 2, 4 seconds
-                            _logger.LogWarning("Gemini API overloaded (503). Retrying in {Delay} seconds... (attempt {Attempt}/{Max})",
-                                delaySeconds, retryCount + 1, maxRetries);
-                            await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
-                            continue; // Retry
-                        }
-
-                        _logger.LogError("Gemini API error: {StatusCode} - {Content}. Endpoint: {Endpoint}",
-                            response.StatusCode, responseContent, endpoint);
-                        throw new Exception($"Gemini API returned error: {response.StatusCode}. Response: {responseContent}");
+                        _logger.LogWarning("Gemini API response did not contain expected structure");
+                        return "No response generated from Gemini API";
                     }
-
-                    // Parse the response
-                    using var jsonDoc = JsonDocument.Parse(responseContent);
-                    var root = jsonDoc.RootElement;
-
-                    // Extract the generated text
-                    if (root.TryGetProperty("candidates", out var candidates) &&
-                        candidates.GetArrayLength() > 0)
+                    catch (HttpRequestException ex) when (attempt < maxRetries)
                     {
-                        var firstCandidate = candidates[0];
-                        if (firstCandidate.TryGetProperty("content", out var content) &&
-                            content.TryGetProperty("parts", out var parts) &&
-                            parts.GetArrayLength() > 0)
-                        {
-                            var firstPart = parts[0];
-                            if (firstPart.TryGetProperty("text", out var textElement))
-                            {
-                                var generatedText = textElement.GetString() ?? string.Empty;
-                                _logger.LogInformation("Gemini API returned response length: {Length}",
-                                    generatedText.Length);
-                                return generatedText;
-                            }
-                        }
-                    }
+                        // Network error, timeout, or connection issue
+                        var delay = TimeSpan.FromMilliseconds(baseDelay.TotalMilliseconds * Math.Pow(2, attempt - 1));
 
-                    _logger.LogWarning("Gemini API response did not contain expected structure");
-                    return "No response generated from Gemini API";
+                        _logger.LogWarning(ex,
+                            "Network error calling Gemini API. Retrying in {Delay}ms... (attempt {Attempt}/{Max})",
+                            delay.TotalMilliseconds, attempt, maxRetries);
+
+                        await Task.Delay(delay);
+                    }
+                    catch (TaskCanceledException ex) when (attempt < maxRetries)
+                    {
+                        // Request timeout
+                        var delay = TimeSpan.FromMilliseconds(baseDelay.TotalMilliseconds * Math.Pow(2, attempt - 1));
+
+                        _logger.LogWarning(ex,
+                            "Request timeout calling Gemini API. Retrying in {Delay}ms... (attempt {Attempt}/{Max})",
+                            delay.TotalMilliseconds, attempt, maxRetries);
+
+                        await Task.Delay(delay);
+                    }
                 }
-                catch (Exception ex) when (ex.Message.Contains("503") && retryCount < maxRetries - 1)
-                {
-                    retryCount++;
-                    var delaySeconds = retryCount * 2;
-                    _logger.LogWarning(ex, "Gemini API error. Retrying in {Delay} seconds... (attempt {Attempt}/{Max})",
-                        delaySeconds, retryCount + 1, maxRetries);
-                    await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error calling Gemini API");
-                    throw;
-                }
+
+                // All retries exhausted
+                throw new Exception($"Gemini API failed after {maxRetries} attempts. Last response: {responseContent}");
             }
-
-            throw new Exception("Gemini API is currently overloaded. Please try again in a few minutes.");
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error calling Gemini API");
+                throw;
+            }
         }
 
         /// <summary>
