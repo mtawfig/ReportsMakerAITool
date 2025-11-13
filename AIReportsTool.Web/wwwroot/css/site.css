@@ -1052,25 +1052,22 @@ textarea.form-control {
 }
 
 /* =======================
-   ApexCharts Container Styling
+   Chart.js Container Styling
    ======================= */
 
-.apex-chart-container {
+.chart-container {
     margin: 2rem 0;
     padding: 1.5rem;
     background: white;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+    max-width: 100%;
 }
 
-.apex-chart-container .apexcharts-toolbar {
-    top: 10px !important;
-    right: 10px !important;
-}
-
-[dir="rtl"] .apex-chart-container .apexcharts-toolbar {
-    right: auto !important;
-    left: 10px !important;
+.chart-container canvas {
+    max-width: 100%;
+    height: auto !important;
 }
 
 /* =======================
