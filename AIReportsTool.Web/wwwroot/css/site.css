@@ -269,6 +269,9 @@ textarea.form-control {
 }
 
 .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     padding: 0.75rem 2rem;
     font-size: 1rem;
     font-weight: 600;
@@ -278,6 +281,11 @@ textarea.form-control {
     transition: all 0.3s ease;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+.btn-icon {
+    font-size: 1.2rem;
+    line-height: 1;
 }
 
 .btn-primary {
@@ -1041,4 +1049,88 @@ textarea.form-control {
     .selected-app-name {
         font-size: 1.5rem;
     }
+}
+
+/* =======================
+   ApexCharts Container Styling
+   ======================= */
+
+.apex-chart-container {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.apex-chart-container .apexcharts-toolbar {
+    top: 10px !important;
+    right: 10px !important;
+}
+
+[dir="rtl"] .apex-chart-container .apexcharts-toolbar {
+    right: auto !important;
+    left: 10px !important;
+}
+
+/* =======================
+   Loading Overlay
+   ======================= */
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    backdrop-filter: blur(4px);
+}
+
+.loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    background: white;
+    padding: 3rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 5px solid #e3e8ff;
+    border-top: 5px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+    text-align: center;
+    max-width: 300px;
+}
+
+/* Disable pointer events on form elements when loading */
+.loading-disabled {
+    pointer-events: none;
+    opacity: 0.6;
 }

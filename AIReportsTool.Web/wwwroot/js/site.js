@@ -286,6 +286,48 @@ function loadRecentRequest(recent) {
     }, 300);
 }
 
+// Show loading overlay and disable form elements
+function showLoading() {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const requestForm = document.querySelector('.request-form');
+
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'flex';
+    }
+
+    if (requestForm) {
+        requestForm.classList.add('loading-disabled');
+    }
+
+    // Disable all form inputs and buttons
+    const inputs = document.querySelectorAll('#subject, #request-text');
+    const buttons = document.querySelectorAll('.format-btn, #submit-btn, #share-btn');
+
+    inputs.forEach(input => input.disabled = true);
+    buttons.forEach(button => button.disabled = true);
+}
+
+// Hide loading overlay and enable form elements
+function hideLoading() {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const requestForm = document.querySelector('.request-form');
+
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'none';
+    }
+
+    if (requestForm) {
+        requestForm.classList.remove('loading-disabled');
+    }
+
+    // Re-enable all form inputs and buttons
+    const inputs = document.querySelectorAll('#subject, #request-text');
+    const buttons = document.querySelectorAll('.format-btn, #submit-btn');
+
+    inputs.forEach(input => input.disabled = false);
+    buttons.forEach(button => button.disabled = false);
+}
+
 // Handle form submission
 async function handleSubmit() {
     const subject = document.getElementById('subject').value.trim();
@@ -316,10 +358,8 @@ async function handleSubmit() {
         return;
     }
 
-    // Disable submit button
-    const submitBtn = document.getElementById('submit-btn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = window.isArabic ? 'جاري الإرسال...' : 'Submitting...';
+    // Show loading overlay and disable form
+    showLoading();
 
     try {
         const payload = {
@@ -363,13 +403,12 @@ async function handleSubmit() {
             'An error occurred while submitting the request'
         );
     } finally {
-        // Re-enable submit button
-        submitBtn.disabled = false;
-        submitBtn.textContent = window.isArabic ? 'إرسال' : 'Submit';
+        // Hide loading overlay and re-enable form
+        hideLoading();
     }
 }
 
-// Display response with Markdown formatting
+// Display response with Markdown formatting and chart rendering
 function displayResponse(responseText) {
     const responseContainer = document.getElementById('response-container');
     const responseTextElement = document.getElementById('response-text');
@@ -390,6 +429,9 @@ function displayResponse(responseText) {
             // Convert Markdown to HTML
             const htmlContent = marked.parse(responseText);
             responseTextElement.innerHTML = htmlContent;
+
+            // Detect and render charts from the response
+            detectAndRenderCharts(responseText, responseTextElement);
         } else {
             // Fallback to plain text if marked.js is not loaded
             responseTextElement.textContent = responseText;
@@ -398,6 +440,208 @@ function displayResponse(responseText) {
         responseContainer.style.display = 'block';
         responseContainer.scrollIntoView({ behavior: 'smooth' });
     }
+}
+
+// Detect and render charts from Gemini response
+function detectAndRenderCharts(responseText, containerElement) {
+    if (typeof ApexCharts === 'undefined') {
+        return; // ApexCharts not loaded
+    }
+
+    // Try to detect chart data patterns
+    const chartData = extractChartData(responseText);
+
+    if (chartData) {
+        renderChart(chartData, containerElement);
+    }
+}
+
+// Extract chart data from response text
+function extractChartData(text) {
+    // Pattern 1: Look for JSON chart data in code blocks
+    const jsonMatch = text.match(/```json\s*(\{[\s\S]*?\})\s*```/);
+    if (jsonMatch) {
+        try {
+            const data = JSON.parse(jsonMatch[1]);
+            if (data.chartType && data.labels && data.values) {
+                return data;
+            }
+        } catch (e) {
+            console.log('Failed to parse JSON chart data');
+        }
+    }
+
+    // Pattern 2: Look for table data that could be a chart
+    const tableMatch = text.match(/\|([^\n]+)\|\s*\n\|[-:\s|]+\|\s*\n((?:\|[^\n]+\|\s*\n?)+)/);
+    if (tableMatch) {
+        const headers = tableMatch[1].split('|').map(h => h.trim()).filter(h => h);
+        const rows = tableMatch[2].trim().split('\n').map(row =>
+            row.split('|').map(cell => cell.trim()).filter(cell => cell)
+        );
+
+        // Check if this looks like chart data (2 columns: label and value)
+        if (headers.length === 2 && rows.length > 0) {
+            const labels = rows.map(row => row[0]);
+            const values = rows.map(row => parseFloat(row[1]) || 0);
+
+            // Detect chart type from context
+            const chartType = detectChartTypeFromContext(text);
+
+            return {
+                chartType: chartType,
+                labels: labels,
+                values: values,
+                title: headers[0] + ' vs ' + headers[1]
+            };
+        }
+    }
+
+    return null;
+}
+
+// Detect chart type from context keywords
+function detectChartTypeFromContext(text) {
+    const lowerText = text.toLowerCase();
+
+    if (lowerText.includes('pie chart') || lowerText.includes('pie')) {
+        return 'pie';
+    } else if (lowerText.includes('donut chart') || lowerText.includes('donut')) {
+        return 'donut';
+    } else if (lowerText.includes('line chart') || lowerText.includes('line graph')) {
+        return 'line';
+    } else if (lowerText.includes('area chart') || lowerText.includes('area')) {
+        return 'area';
+    } else if (lowerText.includes('bar chart') || lowerText.includes('horizontal bar')) {
+        return 'bar';
+    } else if (lowerText.includes('column chart') || lowerText.includes('column') || lowerText.includes('bar')) {
+        return 'column';
+    }
+
+    // Default to column chart
+    return 'column';
+}
+
+// Render chart using ApexCharts
+function renderChart(chartData, containerElement) {
+    // Create chart container
+    const chartId = 'chart-' + Date.now();
+    const chartContainer = document.createElement('div');
+    chartContainer.id = chartId;
+    chartContainer.className = 'apex-chart-container';
+    containerElement.appendChild(chartContainer);
+
+    // Prepare chart options based on type
+    let options = {
+        chart: {
+            type: chartData.chartType === 'column' ? 'bar' : chartData.chartType,
+            height: 400,
+            toolbar: {
+                show: true,
+                tools: {
+                    download: true,
+                    selection: false,
+                    zoom: false,
+                    zoomin: false,
+                    zoomout: false,
+                    pan: false,
+                    reset: false
+                }
+            },
+            fontFamily: 'inherit'
+        },
+        title: {
+            text: chartData.title || 'Chart',
+            align: 'center',
+            style: {
+                fontSize: '18px',
+                fontWeight: 'bold',
+                color: '#333'
+            }
+        },
+        theme: {
+            palette: 'palette1'
+        },
+        colors: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a', '#fee140', '#30cfd0']
+    };
+
+    // Configure based on chart type
+    if (chartData.chartType === 'pie' || chartData.chartType === 'donut') {
+        options.series = chartData.values;
+        options.labels = chartData.labels;
+        options.legend = {
+            position: 'bottom'
+        };
+        options.dataLabels = {
+            enabled: true,
+            formatter: function (val) {
+                return val.toFixed(1) + '%';
+            }
+        };
+        if (chartData.chartType === 'donut') {
+            options.plotOptions = {
+                pie: {
+                    donut: {
+                        size: '65%'
+                    }
+                }
+            };
+        }
+    } else if (chartData.chartType === 'line' || chartData.chartType === 'area') {
+        options.series = [{
+            name: chartData.title || 'Data',
+            data: chartData.values
+        }];
+        options.xaxis = {
+            categories: chartData.labels
+        };
+        options.stroke = {
+            curve: 'smooth',
+            width: 3
+        };
+        options.dataLabels = {
+            enabled: false
+        };
+        if (chartData.chartType === 'area') {
+            options.fill = {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.7,
+                    opacityTo: 0.3
+                }
+            };
+        }
+    } else {
+        // Bar or column chart
+        options.series = [{
+            name: chartData.title || 'Data',
+            data: chartData.values
+        }];
+        options.xaxis = {
+            categories: chartData.labels
+        };
+        options.plotOptions = {
+            bar: {
+                horizontal: chartData.chartType === 'bar',
+                borderRadius: 4,
+                dataLabels: {
+                    position: 'top'
+                }
+            }
+        };
+        options.dataLabels = {
+            enabled: true,
+            offsetY: chartData.chartType === 'bar' ? 0 : -20,
+            style: {
+                fontSize: '12px',
+                colors: ['#333']
+            }
+        };
+    }
+
+    // Render the chart
+    const chart = new ApexCharts(document.getElementById(chartId), options);
+    chart.render();
 }
 
 // Enable share button
@@ -433,83 +677,353 @@ function handleShareAction(action) {
     }
 
     switch (action) {
-        case 'email':
-            handleEmailShare();
-            break;
-        case 'download':
-            handleDownload();
-            break;
         case 'print':
             handlePrint();
+            break;
+        case 'pdf':
+            handleSavePDF();
+            break;
+        case 'word':
+            handleSaveWord();
             break;
     }
 }
 
-// Handle email share
-function handleEmailShare() {
-    const subject = document.getElementById('subject').value;
-    const body = lastResponseText;
-    const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
-}
-
-// Handle download
-function handleDownload() {
-    const subject = document.getElementById('subject').value;
-    const content = lastResponseText;
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${subject}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    showMessage('success', window.isArabic ?
-        'تم تحميل الملف' :
-        'File downloaded'
-    );
-}
-
-// Handle print
+// Handle print - prints the formatted response with all styling
 function handlePrint() {
-    const printWindow = window.open('', '_blank');
     const subject = document.getElementById('subject').value;
-    const content = lastResponseText;
+    const responseTextElement = document.getElementById('response-text');
+
+    if (!responseTextElement) {
+        showMessage('error', window.isArabic ?
+            'لا يوجد محتوى للطباعة' :
+            'No content to print'
+        );
+        return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    const htmlContent = responseTextElement.innerHTML;
+    const isRtl = window.isArabic;
 
     printWindow.document.write(`
         <!DOCTYPE html>
-        <html>
+        <html dir="${isRtl ? 'rtl' : 'ltr'}" lang="${isRtl ? 'ar' : 'en'}">
         <head>
+            <meta charset="UTF-8">
             <title>${subject}</title>
             <style>
                 body {
-                    font-family: Arial, sans-serif;
-                    padding: 20px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+                    padding: 40px;
                     line-height: 1.6;
+                    color: #333;
+                    direction: ${isRtl ? 'rtl' : 'ltr'};
                 }
                 h1 {
                     color: #333;
-                    margin-bottom: 20px;
+                    margin-bottom: 30px;
+                    font-size: 2rem;
+                    border-bottom: 2px solid #667eea;
+                    padding-bottom: 10px;
                 }
-                .content {
-                    white-space: pre-wrap;
+                h2, h3, h4, h5, h6 {
+                    color: #333;
+                    margin-top: 1.5rem;
+                    margin-bottom: 0.75rem;
+                }
+                table {
+                    border-collapse: collapse;
+                    width: 100%;
+                    margin: 1rem 0;
+                }
+                th, td {
+                    border: 1px solid #ddd;
+                    padding: 0.75rem;
+                    text-align: ${isRtl ? 'right' : 'left'};
+                }
+                th {
+                    background-color: #667eea;
+                    color: white;
+                    font-weight: 600;
+                }
+                tr:nth-child(even) {
+                    background-color: #f9fafb;
+                }
+                code {
+                    background-color: #f3f4f6;
+                    padding: 0.2rem 0.4rem;
+                    border-radius: 3px;
+                    font-family: 'Courier New', monospace;
+                    font-size: 0.9em;
+                }
+                pre {
+                    background-color: #1e1e1e;
+                    color: #d4d4d4;
+                    padding: 1rem;
+                    border-radius: 6px;
+                    overflow-x: auto;
+                    margin: 1rem 0;
+                }
+                pre code {
+                    background: none;
+                    padding: 0;
+                    color: inherit;
+                }
+                ul, ol {
+                    margin-bottom: 1rem;
+                    padding-${isRtl ? 'right' : 'left'}: 2rem;
+                }
+                blockquote {
+                    border-${isRtl ? 'right' : 'left'}: 4px solid #667eea;
+                    margin: 1rem 0;
+                    padding: 0.5rem 1rem;
+                    background-color: #f9fafb;
+                }
+                img {
+                    max-width: 100%;
+                    height: auto;
+                }
+                .apex-chart-container {
+                    margin: 2rem 0;
+                    page-break-inside: avoid;
+                }
+                @media print {
+                    body {
+                        padding: 20px;
+                    }
+                    .apex-chart-container {
+                        break-inside: avoid;
+                    }
                 }
             </style>
         </head>
         <body>
             <h1>${subject}</h1>
-            <div class="content">${content}</div>
+            <div class="content">${htmlContent}</div>
         </body>
         </html>
     `);
     printWindow.document.close();
     printWindow.focus();
+
+    // Wait for content to load before printing
     setTimeout(() => {
         printWindow.print();
-    }, 250);
+    }, 500);
+}
+
+// Handle Save PDF - saves the formatted response as PDF
+async function handleSavePDF() {
+    const subject = document.getElementById('subject').value;
+    const responseTextElement = document.getElementById('response-text');
+
+    if (!responseTextElement) {
+        showMessage('error', window.isArabic ?
+            'لا يوجد محتوى لحفظه' :
+            'No content to save'
+        );
+        return;
+    }
+
+    // Check if html2pdf is loaded
+    if (typeof html2pdf === 'undefined') {
+        showMessage('error', window.isArabic ?
+            'مكتبة PDF غير محملة' :
+            'PDF library not loaded'
+        );
+        return;
+    }
+
+    try {
+        // Show loading message
+        showMessage('success', window.isArabic ?
+            'جاري إنشاء ملف PDF...' :
+            'Generating PDF...'
+        );
+
+        // Create a container for PDF content
+        const pdfContainer = document.createElement('div');
+        pdfContainer.style.padding = '40px';
+        pdfContainer.style.backgroundColor = 'white';
+        pdfContainer.style.direction = window.isArabic ? 'rtl' : 'ltr';
+
+        // Add title
+        const titleElement = document.createElement('h1');
+        titleElement.textContent = subject;
+        titleElement.style.marginBottom = '20px';
+        titleElement.style.borderBottom = '2px solid #667eea';
+        titleElement.style.paddingBottom = '10px';
+        pdfContainer.appendChild(titleElement);
+
+        // Clone the response content
+        const contentClone = responseTextElement.cloneNode(true);
+        pdfContainer.appendChild(contentClone);
+
+        // PDF options
+        const options = {
+            margin: [15, 15, 15, 15],
+            filename: `${subject}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: {
+                scale: 2,
+                useCORS: true,
+                logging: false
+            },
+            jsPDF: {
+                unit: 'mm',
+                format: 'a4',
+                orientation: 'portrait'
+            }
+        };
+
+        // Generate and save PDF
+        await html2pdf().set(options).from(pdfContainer).save();
+
+        showMessage('success', window.isArabic ?
+            'تم حفظ ملف PDF' :
+            'PDF saved successfully'
+        );
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        showMessage('error', window.isArabic ?
+            'حدث خطأ أثناء إنشاء PDF' :
+            'Error generating PDF'
+        );
+    }
+}
+
+// Handle Save Word - saves the formatted response as Word document
+function handleSaveWord() {
+    const subject = document.getElementById('subject').value;
+    const responseTextElement = document.getElementById('response-text');
+
+    if (!responseTextElement) {
+        showMessage('error', window.isArabic ?
+            'لا يوجد محتوى لحفظه' :
+            'No content to save'
+        );
+        return;
+    }
+
+    try {
+        const htmlContent = responseTextElement.innerHTML;
+        const isRtl = window.isArabic;
+
+        // Create a complete HTML document for Word
+        const wordContent = `
+            <!DOCTYPE html>
+            <html xmlns:o="urn:schemas-microsoft-com:office:office"
+                  xmlns:w="urn:schemas-microsoft-com:office:word"
+                  xmlns="http://www.w3.org/TR/REC-html40">
+            <head>
+                <meta charset="utf-8">
+                <title>${subject}</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        line-height: 1.6;
+                        direction: ${isRtl ? 'rtl' : 'ltr'};
+                        padding: 40px;
+                    }
+                    h1 {
+                        color: #333;
+                        margin-bottom: 20px;
+                        border-bottom: 2px solid #667eea;
+                        padding-bottom: 10px;
+                        font-size: 24pt;
+                    }
+                    h2 { font-size: 18pt; margin-top: 20px; }
+                    h3 { font-size: 14pt; margin-top: 16px; }
+                    h4 { font-size: 12pt; margin-top: 14px; }
+                    table {
+                        border-collapse: collapse;
+                        width: 100%;
+                        margin: 10px 0;
+                    }
+                    th, td {
+                        border: 1px solid #ddd;
+                        padding: 8px;
+                        text-align: ${isRtl ? 'right' : 'left'};
+                    }
+                    th {
+                        background-color: #667eea;
+                        color: white;
+                        font-weight: bold;
+                    }
+                    tr:nth-child(even) {
+                        background-color: #f9fafb;
+                    }
+                    code {
+                        background-color: #f3f4f6;
+                        padding: 2px 4px;
+                        border-radius: 3px;
+                        font-family: Courier New, monospace;
+                    }
+                    pre {
+                        background-color: #f5f5f5;
+                        padding: 10px;
+                        border: 1px solid #ddd;
+                        border-radius: 4px;
+                        overflow-x: auto;
+                    }
+                    pre code {
+                        background: none;
+                        padding: 0;
+                    }
+                    ul, ol {
+                        margin: 10px 0;
+                        padding-${isRtl ? 'right' : 'left'}: 30px;
+                    }
+                    blockquote {
+                        border-${isRtl ? 'right' : 'left'}: 4px solid #667eea;
+                        margin: 10px 0;
+                        padding: 5px 10px;
+                        background-color: #f9fafb;
+                    }
+                    img {
+                        max-width: 100%;
+                        height: auto;
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>${subject}</h1>
+                ${htmlContent}
+            </body>
+            </html>
+        `;
+
+        // Create blob with Word MIME type
+        const blob = new Blob(['\ufeff', wordContent], {
+            type: 'application/msword'
+        });
+
+        // Create download link
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${subject}.doc`;
+
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Clean up
+        URL.revokeObjectURL(url);
+
+        showMessage('success', window.isArabic ?
+            'تم حفظ ملف Word' :
+            'Word document saved successfully'
+        );
+    } catch (error) {
+        console.error('Error generating Word document:', error);
+        showMessage('error', window.isArabic ?
+            'حدث خطأ أثناء إنشاء ملف Word' :
+            'Error generating Word document'
+        );
+    }
 }
 
 // Show message
