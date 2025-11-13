@@ -61,7 +61,7 @@ namespace AIReportsTool.API.Services
                 var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
                 // Retry configuration
-                const int maxRetries = 11; // total attempts (1 + 10 retries)
+                const int maxRetries = 6; // total attempts (1 + 5 retries)
                 TimeSpan baseDelay = TimeSpan.FromMilliseconds(400);
                 string responseContent = string.Empty;
 
