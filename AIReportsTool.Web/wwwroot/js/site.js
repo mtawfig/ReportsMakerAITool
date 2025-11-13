@@ -369,13 +369,32 @@ async function handleSubmit() {
     }
 }
 
-// Display response
+// Display response with Markdown formatting
 function displayResponse(responseText) {
     const responseContainer = document.getElementById('response-container');
     const responseTextElement = document.getElementById('response-text');
 
     if (responseContainer && responseTextElement) {
-        responseTextElement.textContent = responseText;
+        // Parse Markdown and convert to HTML
+        if (typeof marked !== 'undefined') {
+            // Configure marked options
+            marked.setOptions({
+                breaks: true,        // Convert \n to <br>
+                gfm: true,          // GitHub Flavored Markdown
+                tables: true,       // Support tables
+                sanitize: false,    // Allow HTML (Gemini responses are safe)
+                smartLists: true,   // Use smarter list behavior
+                smartypants: true   // Use smart quotes and dashes
+            });
+
+            // Convert Markdown to HTML
+            const htmlContent = marked.parse(responseText);
+            responseTextElement.innerHTML = htmlContent;
+        } else {
+            // Fallback to plain text if marked.js is not loaded
+            responseTextElement.textContent = responseText;
+        }
+
         responseContainer.style.display = 'block';
         responseContainer.scrollIntoView({ behavior: 'smooth' });
     }
