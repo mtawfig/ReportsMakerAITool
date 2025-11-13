@@ -777,6 +777,34 @@ function handleShareAction(action) {
     }
 }
 
+// Convert canvas charts to images for export
+function convertChartsToImages(containerElement) {
+    const canvases = containerElement.querySelectorAll('.chart-container canvas');
+    const imageUrls = [];
+
+    canvases.forEach(canvas => {
+        try {
+            // Convert canvas to data URL (image)
+            const imageUrl = canvas.toDataURL('image/png');
+
+            // Create img element
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.style.maxWidth = '100%';
+            img.style.height = 'auto';
+
+            // Replace canvas with img
+            canvas.parentNode.replaceChild(img, canvas);
+
+            imageUrls.push(imageUrl);
+        } catch (error) {
+            console.error('Error converting chart to image:', error);
+        }
+    });
+
+    return imageUrls;
+}
+
 // Handle print - prints the formatted response with all styling
 function handlePrint() {
     const subject = document.getElementById('subject').value;
@@ -790,8 +818,14 @@ function handlePrint() {
         return;
     }
 
+    // Clone the response element to avoid modifying the original
+    const clonedElement = responseTextElement.cloneNode(true);
+
+    // Convert canvas charts to images in the clone
+    convertChartsToImages(clonedElement);
+
     const printWindow = window.open('', '_blank');
-    const htmlContent = responseTextElement.innerHTML;
+    const htmlContent = clonedElement.innerHTML;
     const isRtl = window.isArabic;
 
     printWindow.document.write(`
@@ -946,6 +980,10 @@ async function handleSavePDF() {
 
         // Clone the response content
         const contentClone = responseTextElement.cloneNode(true);
+
+        // Convert canvas charts to images in the clone
+        convertChartsToImages(contentClone);
+
         pdfContainer.appendChild(contentClone);
 
         // PDF options
@@ -995,7 +1033,13 @@ function handleSaveWord() {
     }
 
     try {
-        const htmlContent = responseTextElement.innerHTML;
+        // Clone the response element to avoid modifying the original
+        const clonedElement = responseTextElement.cloneNode(true);
+
+        // Convert canvas charts to images in the clone
+        convertChartsToImages(clonedElement);
+
+        const htmlContent = clonedElement.innerHTML;
         const isRtl = window.isArabic;
 
         // Create a complete HTML document for Word
