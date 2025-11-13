@@ -220,11 +220,13 @@
 
             <div class="form-actions">
                 <button type="button" id="submit-btn" class="btn btn-primary">
-                    @(isArabic ? "إرسال" : "Submit")
+                    <span class="btn-icon">🚀</span>
+                    <span>@(isArabic ? "إرسال" : "Submit")</span>
                 </button>
                 <div class="share-container">
                     <button type="button" id="share-btn" class="btn btn-secondary" disabled>
-                        @(isArabic ? "مشاركة" : "Share")
+                        <span class="btn-icon">📤</span>
+                        <span>@(isArabic ? "مشاركة" : "Share")</span>
                     </button>
                     <div id="share-menu" class="share-menu">
                         <button type="button" class="share-option" data-action="email">
