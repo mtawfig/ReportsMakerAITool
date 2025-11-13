@@ -445,15 +445,30 @@ function displayResponse(responseText) {
 // Detect and render charts from Gemini response
 function detectAndRenderCharts(responseText, containerElement) {
     if (typeof ApexCharts === 'undefined') {
+        console.log('ApexCharts library not loaded');
         return; // ApexCharts not loaded
     }
 
-    // Try to detect chart data patterns
+    console.log('Detecting charts in response...');
+
+    // Try to detect chart data patterns from raw text
     const chartData = extractChartData(responseText);
 
     if (chartData) {
+        console.log('Chart data found from text:', chartData);
         renderChart(chartData, containerElement);
+        return;
     }
+
+    // Try to detect chart data from rendered HTML tables
+    const tableChartData = extractChartDataFromTables(containerElement, responseText);
+    if (tableChartData) {
+        console.log('Chart data found from table:', tableChartData);
+        renderChart(tableChartData, containerElement);
+        return;
+    }
+
+    console.log('No chart data detected');
 }
 
 // Extract chart data from response text
@@ -521,48 +536,129 @@ function detectChartTypeFromContext(text) {
     return 'column';
 }
 
+// Extract chart data from rendered HTML tables
+function extractChartDataFromTables(containerElement, originalText) {
+    const lowerText = originalText.toLowerCase();
+
+    // Check if text mentions charts or graphs
+    const hasChartKeyword = lowerText.includes('chart') ||
+                           lowerText.includes('graph') ||
+                           lowerText.includes('pie') ||
+                           lowerText.includes('donut') ||
+                           lowerText.includes('bar') ||
+                           lowerText.includes('column') ||
+                           lowerText.includes('line') ||
+                           lowerText.includes('area');
+
+    if (!hasChartKeyword) {
+        return null; // No chart keywords found
+    }
+
+    // Find all tables in the container
+    const tables = containerElement.querySelectorAll('table');
+
+    if (tables.length === 0) {
+        return null;
+    }
+
+    // Try to extract data from the first table
+    const table = tables[0];
+    const rows = table.querySelectorAll('tbody tr');
+
+    if (rows.length === 0) {
+        return null;
+    }
+
+    // Extract labels and values from table rows
+    const labels = [];
+    const values = [];
+    let hasNumericData = false;
+
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 2) {
+            const label = cells[0].textContent.trim();
+            const valueText = cells[1].textContent.trim();
+
+            // Try to parse as number (remove commas, currency symbols, etc.)
+            const cleanValue = valueText.replace(/[,%$€£¥]/g, '').trim();
+            const numericValue = parseFloat(cleanValue);
+
+            if (!isNaN(numericValue)) {
+                labels.push(label);
+                values.push(numericValue);
+                hasNumericData = true;
+            }
+        }
+    });
+
+    if (!hasNumericData || labels.length === 0) {
+        return null;
+    }
+
+    // Get headers for title
+    const headers = table.querySelectorAll('thead th');
+    let title = 'Data Visualization';
+    if (headers.length >= 2) {
+        title = `${headers[0].textContent.trim()} vs ${headers[1].textContent.trim()}`;
+    }
+
+    // Detect chart type
+    const chartType = detectChartTypeFromContext(originalText);
+
+    return {
+        chartType: chartType,
+        labels: labels,
+        values: values,
+        title: title
+    };
+}
+
 // Render chart using ApexCharts
 function renderChart(chartData, containerElement) {
-    // Create chart container
-    const chartId = 'chart-' + Date.now();
-    const chartContainer = document.createElement('div');
-    chartContainer.id = chartId;
-    chartContainer.className = 'apex-chart-container';
-    containerElement.appendChild(chartContainer);
+    try {
+        console.log('Rendering chart:', chartData);
 
-    // Prepare chart options based on type
-    let options = {
-        chart: {
-            type: chartData.chartType === 'column' ? 'bar' : chartData.chartType,
-            height: 400,
-            toolbar: {
-                show: true,
-                tools: {
-                    download: true,
-                    selection: false,
-                    zoom: false,
-                    zoomin: false,
-                    zoomout: false,
-                    pan: false,
-                    reset: false
+        // Create chart container
+        const chartId = 'chart-' + Date.now();
+        const chartContainer = document.createElement('div');
+        chartContainer.id = chartId;
+        chartContainer.className = 'apex-chart-container';
+        containerElement.appendChild(chartContainer);
+
+        // Prepare chart options based on type
+        let options = {
+            chart: {
+                type: chartData.chartType === 'column' ? 'bar' : chartData.chartType,
+                height: 400,
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: true,
+                        selection: false,
+                        zoom: false,
+                        zoomin: false,
+                        zoomout: false,
+                        pan: false,
+                        reset: false
+                    }
+                },
+                fontFamily: 'inherit'
+            },
+            title: {
+                text: chartData.title || 'Chart',
+                align: 'center',
+                style: {
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    color: '#333'
                 }
             },
-            fontFamily: 'inherit'
-        },
-        title: {
-            text: chartData.title || 'Chart',
-            align: 'center',
-            style: {
-                fontSize: '18px',
-                fontWeight: 'bold',
-                color: '#333'
-            }
-        },
-        theme: {
-            palette: 'palette1'
-        },
-        colors: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a', '#fee140', '#30cfd0']
-    };
+            theme: {
+                palette: 'palette1'
+            },
+            colors: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a', '#fee140', '#30cfd0']
+        };
 
     // Configure based on chart type
     if (chartData.chartType === 'pie' || chartData.chartType === 'donut') {
@@ -639,9 +735,14 @@ function renderChart(chartData, containerElement) {
         };
     }
 
-    // Render the chart
-    const chart = new ApexCharts(document.getElementById(chartId), options);
-    chart.render();
+        // Render the chart
+        const chart = new ApexCharts(document.getElementById(chartId), options);
+        chart.render();
+
+        console.log('Chart rendered successfully');
+    } catch (error) {
+        console.error('Error rendering chart:', error);
+    }
 }
 
 // Enable share button
