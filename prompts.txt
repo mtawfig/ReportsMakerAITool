@@ -1,0 +1,121 @@
+Requests are not saved in database with runtime error below: 
+fail: AIReportsTool.API.Controllers.RequestController[0]
+      Error updating request 32 with response
+      Oracle.ManagedDataAccess.Client.OracleException (0x80004005): ORA-06550: line 1, column 7:
+PLS-00306: wrong number or types of arguments in call to 'SP_UPDATEREQUESTRESPONSE'
+ORA-06550: line 1, column 7:
+PL/SQL: Statement ignored
+      https://docs.oracle.com/error-help/db/ora-06550/
+         at OracleInternal.ServiceObjects.OracleConnectionImpl.VerifyExecution(Int32& cursorId, Boolean bThrowArrayBindRelatedErrors, SqlStatementType sqlStatementType, Int32 arrayBindCount, OracleException& exceptionForArrayBindDML, Boolean& hasMoreRowsInDB, Boolean bFirstIterationDone)
+         at OracleInternal.ServiceObjects.OracleCommandImpl.VerifyExecution(OracleConnectionImpl connectionImpl, Int32& cursorId, Boolean bThrowArrayBindRelatedErrors, OracleException& exceptionForArrayBindDML, Boolean& hasMoreRowsInDB, Boolean bFirstIterationDone)
+         at OracleInternal.ServiceObjects.OracleCommandImpl.ExecuteNonQueryAsync(String commandText, OracleParameterCollection paramColl, CommandType commandType, OracleConnectionImpl connectionImpl, Int32 longFetchSize, Int64 clientInitialLOBFS, OracleDependencyImpl orclDependencyImpl, OracleConnection connection, ENQ_RefAndOutParamArgCtx enq_refOutArgCtx, Boolean isFromEF, Boolean bAsync)
+         at Oracle.ManagedDataAccess.Client.OracleCommand.ExecuteNonQueryInternalAsync(Boolean bAsync, CancellationToken cancellationToken)
+         at Oracle.ManagedDataAccess.Client.OracleCommand.ExecuteNonQueryAsyncHelper(CancellationToken cancellationToken)
+         at AIReportsTool.API.Services.OracleDbService.ExecuteStoredProcedureWithOutParamsAsync(String procedureName, OracleParameter[] parameters) in J:\Projects\AI-Projects\ReportsMakerAITool\AIReportsTool.API\Services\OracleDbService.cs:line 83
+         at AIReportsTool.API.Controllers.RequestController.UpdateRequestResponseAsync(Int32 requestId, String responseText) in J:\Projects\AI-Projects\ReportsMakerAITool\AIReportsTool.API\Controllers\RequestController.cs:line 255
+
+Fix the error.Below are the procedures in the database package:
+PROCEDURE SP_InsertRequest (
+        p_app_id IN NUMBER,
+        p_username IN VARCHAR2,
+        p_subject IN VARCHAR2,
+        p_request_text IN CLOB,
+        p_response_format IN VARCHAR2 DEFAULT NULL,
+        p_token IN VARCHAR2 DEFAULT NULL,
+        p_request_id OUT NUMBER,
+        p_status OUT NUMBER,
+        p_message OUT VARCHAR2
+    )
+    AS
+        v_app_count NUMBER;
+    BEGIN
+        -- Validate application exists and is active
+        SELECT COUNT(*) INTO v_app_count
+        FROM IRT_Applications
+        WHERE AppId = p_app_id AND IsActive = 1;
+        
+        IF v_app_count = 0 THEN
+            p_status := 0;
+            p_message := 'Invalid application ID';
+            p_request_id := NULL;
+            RETURN;
+        END IF;
+        
+        -- Validate required fields
+        IF p_subject IS NULL OR TRIM(p_subject) IS NULL THEN
+            p_status := 0;
+            p_message := 'Subject is required';
+            p_request_id := NULL;
+            RETURN;
+        END IF;
+        
+        IF p_request_text IS NULL OR DBMS_LOB.GETLENGTH(p_request_text) = 0 THEN
+            p_status := 0;
+            p_message := 'Request text is required';
+            p_request_id := NULL;
+            RETURN;
+        END IF;
+        
+        -- Insert request with status = 0 (Pending)
+        INSERT INTO IRT_Requests (
+            AppId,
+            Username,
+            Subject,
+            RequestText,
+            ResponseFormat,
+            Status,
+            Token
+        ) VALUES (
+            p_app_id,
+            p_username,
+            p_subject,
+            p_request_text,
+            p_response_format,
+            0,  -- Status: Pending
+            p_token
+        ) RETURNING RequestId INTO p_request_id;
+        
+        COMMIT;
+        
+        p_status := 1;
+        p_message := 'Success';
+        
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+            p_status := 0;
+            p_message := 'Error: ' || SUBSTR(SQLERRM, 1, 200);
+            p_request_id := NULL;
+    END SP_InsertRequest;
+    
+    -- =======================================================================================
+    -- Implementation: SP_UpdateRequestResponse
+    -- =======================================================================================
+    PROCEDURE SP_UpdateRequestResponse (
+        p_request_id IN NUMBER,
+        p_response_text IN CLOB,
+        p_status IN NUMBER DEFAULT 1,
+        p_error_message IN VARCHAR2 DEFAULT NULL
+    )
+    AS
+    BEGIN
+        UPDATE IRT_Requests
+        SET 
+            Status = p_status,
+            ResponseText = p_response_text,
+            ResponseDateTime = SYSDATE,
+            ErrorMessage = p_error_message,
+            ModifiedDate = SYSDATE
+        WHERE RequestId = p_request_id;
+        
+        IF SQL%ROWCOUNT = 0 THEN
+            RAISE_APPLICATION_ERROR(-20001, 'Request ID not found: ' || p_request_id);
+        END IF;
+        
+        COMMIT;
+        
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+            RAISE;
+    END SP_UpdateRequestResponse;
