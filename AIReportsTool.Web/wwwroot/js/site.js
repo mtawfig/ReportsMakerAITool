@@ -426,11 +426,25 @@ function displayResponse(responseText) {
                 smartypants: true   // Use smart quotes and dashes
             });
 
+            // Remove JSON chart data blocks before displaying
+            let cleanedText = responseText;
+
+            // Remove JSON blocks that contain chart data
+            cleanedText = cleanedText.replace(/```json\s*\{[\s\S]*?"chart_type"[\s\S]*?\}\s*```/gi, '');
+            cleanedText = cleanedText.replace(/```json\s*\{[\s\S]*?"chartType"[\s\S]*?\}\s*```/gi, '');
+
+            // Remove any lines that introduce the JSON structure
+            cleanedText = cleanedText.replace(/JSON\/Programmatic Data Structure.*?:\s*/gi, '');
+            cleanedText = cleanedText.replace(/Example \(for.*?\):\s*/gi, '');
+
+            // Clean up multiple consecutive newlines
+            cleanedText = cleanedText.replace(/\n{3,}/g, '\n\n');
+
             // Convert Markdown to HTML
-            const htmlContent = marked.parse(responseText);
+            const htmlContent = marked.parse(cleanedText);
             responseTextElement.innerHTML = htmlContent;
 
-            // Detect and render charts from the response
+            // Detect and render charts from the ORIGINAL response text (not cleaned)
             detectAndRenderCharts(responseText, responseTextElement);
         } else {
             // Fallback to plain text if marked.js is not loaded
