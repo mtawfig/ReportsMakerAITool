@@ -281,6 +281,21 @@ textarea.form-control {
     cursor: not-allowed;
 }
 
+.btn-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    color: white;
+}
+
+.btn-info:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(23, 162, 184, 0.4);
+}
+
+.btn-info:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 /* Share Container */
 .share-container {
     position: relative;

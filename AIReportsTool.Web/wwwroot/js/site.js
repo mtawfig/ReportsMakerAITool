@@ -91,6 +91,12 @@ function setupEventListeners() {
         submitBtn.addEventListener('click', handleSubmit);
     }
 
+    // Get Query button
+    const getQueryBtn = document.getElementById('get-query-btn');
+    if (getQueryBtn) {
+        getQueryBtn.addEventListener('click', handleGetQuery);
+    }
+
     // Share button
     const shareBtn = document.getElementById('share-btn');
     if (shareBtn) {
@@ -369,6 +375,81 @@ async function handleSubmit() {
         showMessage('error', window.isArabic ?
             'حدث خطأ أثناء إرسال الطلب' :
             'An error occurred while submitting the request'
+        );
+    } finally {
+        // Hide loading overlay and re-enable form
+        hideLoading();
+    }
+}
+
+// Handle Get Query button click
+async function handleGetQuery() {
+    const subject = document.getElementById('subject').value.trim();
+    const requestText = document.getElementById('request-text').value.trim();
+
+    // Validation
+    if (!selectedAppId) {
+        showMessage('error', window.isArabic ?
+            'الرجاء اختيار تطبيق من القائمة الجانبية' :
+            'Please select an application from the sidebar'
+        );
+        return;
+    }
+
+    if (!subject) {
+        showMessage('error', window.isArabic ?
+            'الرجاء إدخال الموضوع' :
+            'Please enter a subject'
+        );
+        return;
+    }
+
+    if (!requestText) {
+        showMessage('error', window.isArabic ?
+            'الرجاء إدخال نص الطلب' :
+            'Please enter request text'
+        );
+        return;
+    }
+
+    // Show loading overlay and disable form
+    showLoading();
+
+    try {
+        const payload = {
+            AppId: selectedAppId,
+            Subject: subject,
+            RequestText: requestText
+        };
+
+        const response = await fetch('/Request/GenerateQuery', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.Status === 1) {
+            // Success
+            lastResponseText = result.ResponseText;
+            displayResponse(result.ResponseText);
+            enableShareButton();
+            showMessage('success', result.Message);
+        } else {
+            // Error
+            showMessage('error', result.Message || (window.isArabic ?
+                'فشل في إنشاء الاستعلام' :
+                'Failed to generate query'
+            ));
+        }
+    } catch (error) {
+        console.error('Error generating query:', error);
+        showMessage('error', window.isArabic ?
+            'حدث خطأ أثناء إنشاء الاستعلام' :
+            'An error occurred while generating the query'
         );
     } finally {
         // Hide loading overlay and re-enable form
