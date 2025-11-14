@@ -429,6 +429,29 @@ function displayResponse(responseText) {
             // Remove all code blocks before displaying
             let cleanedText = responseText;
 
+            // Remove Gemini's meta-messages (introductory and concluding statements)
+            // Remove lines like "Okay, I will assist you with..."
+            cleanedText = cleanedText.replace(/^Okay,?\s+I\s+will\s+assist\s+you.*?\.(\s*\n)*/im, '');
+            cleanedText = cleanedText.replace(/^Sure,?\s+I\s+will\s+help.*?\.(\s*\n)*/im, '');
+            cleanedText = cleanedText.replace(/^Sure,?\s+I\s+can\s+help.*?\.(\s*\n)*/im, '');
+            cleanedText = cleanedText.replace(/^I\s+will\s+assist.*?\.(\s*\n)*/im, '');
+            cleanedText = cleanedText.replace(/^I\s+will\s+help.*?\.(\s*\n)*/im, '');
+
+            // Remove lines that reference the application name
+            cleanedText = cleanedText.replace(/with\s+the\s+['"'].*?['"']\s+application.*?\.(\s*\n)*/gi, '');
+
+            // Remove "Here is..." introductory lines
+            cleanedText = cleanedText.replace(/^Here\s+is\s+.*?:(\s*\n)*/im, '');
+            cleanedText = cleanedText.replace(/^Here\s+are\s+.*?:(\s*\n)*/im, '');
+            cleanedText = cleanedText.replace(/^Below\s+is\s+.*?:(\s*\n)*/im, '');
+            cleanedText = cleanedText.replace(/^Below\s+are\s+.*?:(\s*\n)*/im, '');
+
+            // Remove concluding statements like "I hope this helps"
+            cleanedText = cleanedText.replace(/I\s+hope\s+this\s+helps.*?\.?$/im, '');
+            cleanedText = cleanedText.replace(/Please\s+let\s+me\s+know\s+if.*?\.?$/im, '');
+            cleanedText = cleanedText.replace(/Let\s+me\s+know\s+if.*?\.?$/im, '');
+            cleanedText = cleanedText.replace(/Feel\s+free\s+to\s+ask.*?\.?$/im, '');
+
             // Remove all code blocks (```...```) regardless of language
             cleanedText = cleanedText.replace(/```[\s\S]*?```/g, '');
 
@@ -440,6 +463,9 @@ function displayResponse(responseText) {
 
             // Clean up multiple consecutive newlines
             cleanedText = cleanedText.replace(/\n{3,}/g, '\n\n');
+
+            // Trim leading and trailing whitespace
+            cleanedText = cleanedText.trim();
 
             // Convert Markdown to HTML
             const htmlContent = marked.parse(cleanedText);
