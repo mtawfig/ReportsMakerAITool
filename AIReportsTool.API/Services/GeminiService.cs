@@ -157,7 +157,7 @@ namespace AIReportsTool.API.Services
 
                 // All retries exhausted
                 var finalError = string.IsNullOrEmpty(responseContent)
-                    ? "The AI service is temporarily unavailable. Please try again later."
+                    ? "We're having trouble connecting right now. Please wait a few minutes and try again."
                     : ParseGeminiError(responseContent, 503); // Assume 503 if we exhausted retries
                 throw new Exception(finalError);
             }
@@ -205,17 +205,17 @@ namespace AIReportsTool.API.Services
         {
             return errorCode switch
             {
-                400 => "Invalid request. Please check your input and try again.",
-                401 => "Authentication failed. Please contact support.",
-                403 => "Access denied. You don't have permission to use this service.",
-                404 => "The AI service endpoint was not found. Please contact support.",
-                429 => "Too many requests. Please wait a moment and try again.",
-                500 => "The AI service encountered an internal error. Please try again later.",
-                503 => "The AI service is temporarily overloaded. Please try again in a few moments.",
-                504 => "The request timed out. Please try again.",
+                400 => "Oops! Something's not quite right with your request. Please try again with different wording.",
+                401 => "We couldn't verify your access. Please contact our support team for assistance.",
+                403 => "You don't have permission to use this feature right now. Please contact support if you think this is a mistake.",
+                404 => "We're having trouble connecting to our system. Please try again in a few minutes or contact support.",
+                429 => "Whoa! Slow down a bit. You've sent too many requests. Please wait a moment and try again.",
+                500 => "Something went wrong on our end. Don't worry, it's not your fault! Please try again in a few minutes.",
+                503 => "We're experiencing high demand right now. Please wait a moment and try again.",
+                504 => "Your request is taking longer than expected. Please try again.",
                 _ => !string.IsNullOrEmpty(originalMessage) && !originalMessage.Contains("{") && !originalMessage.Contains("}")
                     ? originalMessage // Use original message if it's not JSON
-                    : "An error occurred while processing your request. Please try again later."
+                    : "Something unexpected happened. Please try again, and if the problem continues, contact our support team."
             };
         }
 
