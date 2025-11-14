@@ -426,16 +426,17 @@ function displayResponse(responseText) {
                 smartypants: true   // Use smart quotes and dashes
             });
 
-            // Remove JSON chart data blocks before displaying
+            // Remove all code blocks before displaying
             let cleanedText = responseText;
 
-            // Remove JSON blocks that contain chart data
-            cleanedText = cleanedText.replace(/```json\s*\{[\s\S]*?"chart_type"[\s\S]*?\}\s*```/gi, '');
-            cleanedText = cleanedText.replace(/```json\s*\{[\s\S]*?"chartType"[\s\S]*?\}\s*```/gi, '');
+            // Remove all code blocks (```...```) regardless of language
+            cleanedText = cleanedText.replace(/```[\s\S]*?```/g, '');
 
-            // Remove any lines that introduce the JSON structure
+            // Remove any lines that introduce code/data structures
             cleanedText = cleanedText.replace(/JSON\/Programmatic Data Structure.*?:\s*/gi, '');
             cleanedText = cleanedText.replace(/Example \(for.*?\):\s*/gi, '');
+            cleanedText = cleanedText.replace(/Code Example.*?:\s*/gi, '');
+            cleanedText = cleanedText.replace(/Sample Code.*?:\s*/gi, '');
 
             // Clean up multiple consecutive newlines
             cleanedText = cleanedText.replace(/\n{3,}/g, '\n\n');
