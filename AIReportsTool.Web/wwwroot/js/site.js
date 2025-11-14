@@ -6,7 +6,6 @@
 // Global state
 let selectedAppId = null;
 let selectedAppName = null;
-let selectedFormat = null;
 let lastResponseText = null;
 
 // Initialize when DOM is ready
@@ -75,7 +74,6 @@ function showFormSection() {
 function clearForm() {
     selectedAppId = null;
     selectedAppName = null;
-    selectedFormat = null;
 
     document.getElementById('selected-appid').value = '';
     document.getElementById('selected-appname').value = '';
@@ -83,24 +81,10 @@ function clearForm() {
     document.getElementById('request-text').value = '';
     document.getElementById('response-container').style.display = 'none';
     document.getElementById('share-btn').disabled = true;
-
-    // Clear format selection
-    const formatButtons = document.querySelectorAll('.format-btn');
-    formatButtons.forEach(btn => btn.classList.remove('selected'));
 }
 
 // Setup all event listeners
 function setupEventListeners() {
-    // Format button selection
-    const formatButtons = document.querySelectorAll('.format-btn');
-    formatButtons.forEach(btn => {
-        btn.addEventListener('click', function () {
-            formatButtons.forEach(b => b.classList.remove('selected'));
-            this.classList.add('selected');
-            selectedFormat = this.getAttribute('data-format');
-        });
-    });
-
     // Submit button
     const submitBtn = document.getElementById('submit-btn');
     if (submitBtn) {
@@ -301,7 +285,7 @@ function showLoading() {
 
     // Disable all form inputs and buttons
     const inputs = document.querySelectorAll('#subject, #request-text');
-    const buttons = document.querySelectorAll('.format-btn, #submit-btn, #share-btn');
+    const buttons = document.querySelectorAll('#submit-btn, #share-btn');
 
     inputs.forEach(input => input.disabled = true);
     buttons.forEach(button => button.disabled = true);
@@ -322,7 +306,7 @@ function hideLoading() {
 
     // Re-enable all form inputs and buttons
     const inputs = document.querySelectorAll('#subject, #request-text');
-    const buttons = document.querySelectorAll('.format-btn, #submit-btn');
+    const buttons = document.querySelectorAll('#submit-btn');
 
     inputs.forEach(input => input.disabled = false);
     buttons.forEach(button => button.disabled = false);
