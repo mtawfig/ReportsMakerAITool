@@ -241,24 +241,12 @@ namespace AIReportsTool.API.Controllers
                     1 // Mark as completed
                 );
 
-                var dbStatusParam = OracleDbService.CreateOutputParameter(
-                    "p_db_status",
-                    OracleDbType.Int32
-                );
-
-                var messageParam = OracleDbService.CreateOutputParameter(
-                    "p_message",
-                    OracleDbType.Varchar2,
-                    4000
-                );
-
+                // Note: SP_UpdateRequestResponse has no OUT parameters, only IN parameters
                 await _dbService.ExecuteStoredProcedureWithOutParamsAsync(
                     "P_IRT_REPORTHELPERTOOL.SP_UpdateRequestResponse",
                     requestIdParam,
                     responseTextParam,
-                    statusParam,
-                    dbStatusParam,
-                    messageParam
+                    statusParam
                 );
 
                 _logger.LogInformation("Updated request {RequestId} with Gemini response", requestId);
