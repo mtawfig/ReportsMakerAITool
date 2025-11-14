@@ -220,14 +220,6 @@ function selectApplication(app) {
 
     // Show form section
     showFormSection();
-
-    // Show success message after transition
-    setTimeout(() => {
-        showMessage('success', window.isArabic ?
-            `تم اختيار التطبيق: ${selectedAppName}` :
-            `Selected application: ${selectedAppName}`
-        );
-    }, 300);
 }
 
 // Load a recent request into the form
@@ -260,14 +252,6 @@ function loadRecentRequest(recent) {
 
     // Show form section
     showFormSection();
-
-    // Show success message after transition
-    setTimeout(() => {
-        showMessage('success', window.isArabic ?
-            'تم تحميل الطلب السابق' :
-            'Previous request loaded'
-        );
-    }, 300);
 }
 
 // Show loading overlay and disable form elements
