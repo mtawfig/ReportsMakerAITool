@@ -84,5 +84,6 @@ namespace AIReportsTool.API.Controllers
                 return StatusCode(500, response);
             }
         }
+
     }
 }
