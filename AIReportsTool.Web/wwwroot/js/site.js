@@ -357,7 +357,7 @@ async function handleSubmit() {
         if (result.Status === 1) {
             // Success
             lastResponseText = result.ResponseText;
-            displayResponse(result.ResponseText);
+            displayResponse(result.ResponseText, true); // true = remove code blocks
             enableShareButton();
             showMessage('success', result.Message);
 
@@ -435,7 +435,7 @@ async function handleGetQuery() {
         if (result.Status === 1) {
             // Success
             lastResponseText = result.ResponseText;
-            displayResponse(result.ResponseText);
+            displayResponse(result.ResponseText, false); // false = keep code blocks (for SQL query)
             enableShareButton();
             showMessage('success', result.Message);
         } else {
@@ -458,7 +458,7 @@ async function handleGetQuery() {
 }
 
 // Display response with Markdown formatting and chart rendering
-function displayResponse(responseText) {
+function displayResponse(responseText, removeCodeBlocks = false) {
     const responseContainer = document.getElementById('response-container');
     const responseTextElement = document.getElementById('response-text');
 
@@ -475,7 +475,7 @@ function displayResponse(responseText) {
                 smartypants: true   // Use smart quotes and dashes
             });
 
-            // Remove all code blocks before displaying
+            // Clean the text based on options
             let cleanedText = responseText;
 
             // Remove Gemini's meta-messages (introductory and concluding statements)
@@ -501,14 +501,17 @@ function displayResponse(responseText) {
             cleanedText = cleanedText.replace(/Let\s+me\s+know\s+if.*?\.?$/im, '');
             cleanedText = cleanedText.replace(/Feel\s+free\s+to\s+ask.*?\.?$/im, '');
 
-            // Remove all code blocks (```...```) regardless of language
-            cleanedText = cleanedText.replace(/```[\s\S]*?```/g, '');
+            // Only remove code blocks if requested (for regular Submit, not for Get Query)
+            if (removeCodeBlocks) {
+                // Remove all code blocks (```...```) regardless of language
+                cleanedText = cleanedText.replace(/```[\s\S]*?```/g, '');
 
-            // Remove any lines that introduce code/data structures
-            cleanedText = cleanedText.replace(/JSON\/Programmatic Data Structure.*?:\s*/gi, '');
-            cleanedText = cleanedText.replace(/Example \(for.*?\):\s*/gi, '');
-            cleanedText = cleanedText.replace(/Code Example.*?:\s*/gi, '');
-            cleanedText = cleanedText.replace(/Sample Code.*?:\s*/gi, '');
+                // Remove any lines that introduce code/data structures
+                cleanedText = cleanedText.replace(/JSON\/Programmatic Data Structure.*?:\s*/gi, '');
+                cleanedText = cleanedText.replace(/Example \(for.*?\):\s*/gi, '');
+                cleanedText = cleanedText.replace(/Code Example.*?:\s*/gi, '');
+                cleanedText = cleanedText.replace(/Sample Code.*?:\s*/gi, '');
+            }
 
             // Clean up multiple consecutive newlines
             cleanedText = cleanedText.replace(/\n{3,}/g, '\n\n');
