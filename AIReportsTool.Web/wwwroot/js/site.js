@@ -538,6 +538,8 @@ function detectChartTypeFromContext(text) {
 
 // Extract chart data from rendered HTML tables
 function extractChartDataFromTables(containerElement, originalText) {
+    console.log('Checking for tables to convert to charts...');
+
     const lowerText = originalText.toLowerCase();
 
     // Check if text mentions charts or graphs
@@ -550,31 +552,97 @@ function extractChartDataFromTables(containerElement, originalText) {
                            lowerText.includes('line') ||
                            lowerText.includes('area');
 
-    if (!hasChartKeyword) {
-        return null; // No chart keywords found
-    }
+    console.log('Has chart keyword:', hasChartKeyword);
 
     // Find all tables in the container
     const tables = containerElement.querySelectorAll('table');
+    console.log('Tables found:', tables.length);
 
     if (tables.length === 0) {
+        console.log('No tables found');
         return null;
     }
 
     // Try to extract data from the first table
     const table = tables[0];
     const rows = table.querySelectorAll('tbody tr');
+    console.log('Table rows found:', rows.length);
 
     if (rows.length === 0) {
-        return null;
+        // Try without tbody
+        const allRows = table.querySelectorAll('tr');
+        console.log('Total rows (without tbody):', allRows.length);
+
+        if (allRows.length === 0) {
+            return null;
+        }
+
+        // Extract data from rows (skip header row if exists)
+        const labels = [];
+        const values = [];
+        let hasNumericData = false;
+        let startIndex = 0;
+
+        // Check if first row is a header
+        const firstRow = allRows[0];
+        const firstRowCells = firstRow.querySelectorAll('th');
+        if (firstRowCells.length > 0) {
+            startIndex = 1; // Skip header row
+        }
+
+        for (let i = startIndex; i < allRows.length; i++) {
+            const row = allRows[i];
+            const cells = row.querySelectorAll('td, th');
+
+            if (cells.length >= 2) {
+                const label = cells[0].textContent.trim();
+                const valueText = cells[1].textContent.trim();
+
+                // Try to parse as number (remove commas, currency symbols, etc.)
+                const cleanValue = valueText.replace(/[,%$€£¥]/g, '').trim();
+                const numericValue = parseFloat(cleanValue);
+
+                console.log(`Row ${i}: "${label}" = "${valueText}" -> ${numericValue}`);
+
+                if (!isNaN(numericValue)) {
+                    labels.push(label);
+                    values.push(numericValue);
+                    hasNumericData = true;
+                }
+            }
+        }
+
+        if (!hasNumericData || labels.length === 0) {
+            console.log('No numeric data found in table');
+            return null;
+        }
+
+        // Get headers for title
+        const headers = table.querySelectorAll('th');
+        let title = 'Data Visualization';
+        if (headers.length >= 2) {
+            title = `${headers[0].textContent.trim()} vs ${headers[1].textContent.trim()}`;
+        }
+
+        // Detect chart type - if no keyword, try to render anyway if we have data
+        const chartType = hasChartKeyword ? detectChartTypeFromContext(originalText) : 'column';
+
+        console.log('Chart data extracted:', { chartType, labels, values, title });
+
+        return {
+            chartType: chartType,
+            labels: labels,
+            values: values,
+            title: title
+        };
     }
 
-    // Extract labels and values from table rows
+    // Original logic for tables with tbody
     const labels = [];
     const values = [];
     let hasNumericData = false;
 
-    rows.forEach(row => {
+    rows.forEach((row, index) => {
         const cells = row.querySelectorAll('td');
         if (cells.length >= 2) {
             const label = cells[0].textContent.trim();
@@ -583,6 +651,8 @@ function extractChartDataFromTables(containerElement, originalText) {
             // Try to parse as number (remove commas, currency symbols, etc.)
             const cleanValue = valueText.replace(/[,%$€£¥]/g, '').trim();
             const numericValue = parseFloat(cleanValue);
+
+            console.log(`Row ${index}: "${label}" = "${valueText}" -> ${numericValue}`);
 
             if (!isNaN(numericValue)) {
                 labels.push(label);
@@ -593,6 +663,7 @@ function extractChartDataFromTables(containerElement, originalText) {
     });
 
     if (!hasNumericData || labels.length === 0) {
+        console.log('No numeric data found in table');
         return null;
     }
 
@@ -603,8 +674,10 @@ function extractChartDataFromTables(containerElement, originalText) {
         title = `${headers[0].textContent.trim()} vs ${headers[1].textContent.trim()}`;
     }
 
-    // Detect chart type
-    const chartType = detectChartTypeFromContext(originalText);
+    // Detect chart type - if no keyword, try to render anyway if we have data
+    const chartType = hasChartKeyword ? detectChartTypeFromContext(originalText) : 'column';
+
+    console.log('Chart data extracted:', { chartType, labels, values, title });
 
     return {
         chartType: chartType,
@@ -777,6 +850,34 @@ function handleShareAction(action) {
     }
 }
 
+// Convert canvas charts to images for export
+function convertChartsToImages(containerElement) {
+    const canvases = containerElement.querySelectorAll('.chart-container canvas');
+    const imageUrls = [];
+
+    canvases.forEach(canvas => {
+        try {
+            // Convert canvas to data URL (image)
+            const imageUrl = canvas.toDataURL('image/png');
+
+            // Create img element
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.style.maxWidth = '100%';
+            img.style.height = 'auto';
+
+            // Replace canvas with img
+            canvas.parentNode.replaceChild(img, canvas);
+
+            imageUrls.push(imageUrl);
+        } catch (error) {
+            console.error('Error converting chart to image:', error);
+        }
+    });
+
+    return imageUrls;
+}
+
 // Handle print - prints the formatted response with all styling
 function handlePrint() {
     const subject = document.getElementById('subject').value;
@@ -790,8 +891,14 @@ function handlePrint() {
         return;
     }
 
+    // Clone the response element to avoid modifying the original
+    const clonedElement = responseTextElement.cloneNode(true);
+
+    // Convert canvas charts to images in the clone
+    convertChartsToImages(clonedElement);
+
     const printWindow = window.open('', '_blank');
-    const htmlContent = responseTextElement.innerHTML;
+    const htmlContent = clonedElement.innerHTML;
     const isRtl = window.isArabic;
 
     printWindow.document.write(`
@@ -946,6 +1053,10 @@ async function handleSavePDF() {
 
         // Clone the response content
         const contentClone = responseTextElement.cloneNode(true);
+
+        // Convert canvas charts to images in the clone
+        convertChartsToImages(contentClone);
+
         pdfContainer.appendChild(contentClone);
 
         // PDF options
@@ -995,7 +1106,13 @@ function handleSaveWord() {
     }
 
     try {
-        const htmlContent = responseTextElement.innerHTML;
+        // Clone the response element to avoid modifying the original
+        const clonedElement = responseTextElement.cloneNode(true);
+
+        // Convert canvas charts to images in the clone
+        convertChartsToImages(clonedElement);
+
+        const htmlContent = clonedElement.innerHTML;
         const isRtl = window.isArabic;
 
         // Create a complete HTML document for Word

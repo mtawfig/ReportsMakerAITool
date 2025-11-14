@@ -273,5 +273,14 @@
         // Store language for JavaScript
         window.appLanguage = '@language';
         window.isArabic = @(isArabic ? "true" : "false");
+
+        // Check if Chart.js loaded
+        window.addEventListener('DOMContentLoaded', function() {
+            if (typeof Chart !== 'undefined') {
+                console.log('Chart.js loaded successfully:', Chart.version);
+            } else {
+                console.error('Chart.js failed to load!');
+            }
+        });
     </script>
 }
