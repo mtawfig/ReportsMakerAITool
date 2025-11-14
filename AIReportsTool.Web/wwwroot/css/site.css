@@ -1063,11 +1063,13 @@ textarea.form-control {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     position: relative;
     max-width: 100%;
+    min-height: 400px;
 }
 
 .chart-container canvas {
     max-width: 100%;
-    height: auto !important;
+    width: 100% !important;
+    height: 400px !important;
 }
 
 /* =======================
