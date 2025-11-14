@@ -9,6 +9,6 @@ namespace AIReportsTool.API.Models
         public string AppNameEn { get; set; } = string.Empty;
         public string AppNameAr { get; set; } = string.Empty;
         public string AppUrl { get; set; } = string.Empty;
-        public string AppIcon { get; set; } = string.Empty;
+        public string AppIcon { get; set; } = string.Empty;        
     }
 }
