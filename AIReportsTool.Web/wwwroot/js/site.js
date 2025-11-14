@@ -850,32 +850,39 @@ function handleShareAction(action) {
     }
 }
 
-// Convert canvas charts to images for export
-function convertChartsToImages(containerElement) {
-    const canvases = containerElement.querySelectorAll('.chart-container canvas');
-    const imageUrls = [];
+// Convert canvas charts to images for export (captures from original, replaces in clone)
+function captureChartsAsImages(originalElement, clonedElement) {
+    const originalCanvases = originalElement.querySelectorAll('.chart-container canvas');
+    const clonedCanvases = clonedElement.querySelectorAll('.chart-container canvas');
 
-    canvases.forEach(canvas => {
+    console.log('Original canvases found:', originalCanvases.length);
+    console.log('Cloned canvases found:', clonedCanvases.length);
+
+    originalCanvases.forEach((originalCanvas, index) => {
         try {
-            // Convert canvas to data URL (image)
-            const imageUrl = canvas.toDataURL('image/png');
+            if (index < clonedCanvases.length) {
+                const clonedCanvas = clonedCanvases[index];
 
-            // Create img element
-            const img = document.createElement('img');
-            img.src = imageUrl;
-            img.style.maxWidth = '100%';
-            img.style.height = 'auto';
+                // Convert original canvas to data URL (image)
+                const imageUrl = originalCanvas.toDataURL('image/png');
+                console.log('Captured chart image:', imageUrl.substring(0, 50) + '...');
 
-            // Replace canvas with img
-            canvas.parentNode.replaceChild(img, canvas);
+                // Create img element
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.style.maxWidth = '100%';
+                img.style.height = 'auto';
+                img.style.display = 'block';
+                img.style.margin = '0 auto';
 
-            imageUrls.push(imageUrl);
+                // Replace canvas with img in the cloned element
+                clonedCanvas.parentNode.replaceChild(img, clonedCanvas);
+                console.log('Replaced canvas with image in clone');
+            }
         } catch (error) {
             console.error('Error converting chart to image:', error);
         }
     });
-
-    return imageUrls;
 }
 
 // Handle print - prints the formatted response with all styling
@@ -894,8 +901,8 @@ function handlePrint() {
     // Clone the response element to avoid modifying the original
     const clonedElement = responseTextElement.cloneNode(true);
 
-    // Convert canvas charts to images in the clone
-    convertChartsToImages(clonedElement);
+    // Capture charts from original and replace in clone
+    captureChartsAsImages(responseTextElement, clonedElement);
 
     const printWindow = window.open('', '_blank');
     const htmlContent = clonedElement.innerHTML;
@@ -1054,8 +1061,8 @@ async function handleSavePDF() {
         // Clone the response content
         const contentClone = responseTextElement.cloneNode(true);
 
-        // Convert canvas charts to images in the clone
-        convertChartsToImages(contentClone);
+        // Capture charts from original and replace in clone
+        captureChartsAsImages(responseTextElement, contentClone);
 
         pdfContainer.appendChild(contentClone);
 
@@ -1109,8 +1116,8 @@ function handleSaveWord() {
         // Clone the response element to avoid modifying the original
         const clonedElement = responseTextElement.cloneNode(true);
 
-        // Convert canvas charts to images in the clone
-        convertChartsToImages(clonedElement);
+        // Capture charts from original and replace in clone
+        captureChartsAsImages(responseTextElement, clonedElement);
 
         const htmlContent = clonedElement.innerHTML;
         const isRtl = window.isArabic;
