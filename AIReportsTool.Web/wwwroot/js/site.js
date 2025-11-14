@@ -6,7 +6,6 @@
 // Global state
 let selectedAppId = null;
 let selectedAppName = null;
-let selectedFormat = null;
 let lastResponseText = null;
 
 // Initialize when DOM is ready
@@ -75,7 +74,6 @@ function showFormSection() {
 function clearForm() {
     selectedAppId = null;
     selectedAppName = null;
-    selectedFormat = null;
 
     document.getElementById('selected-appid').value = '';
     document.getElementById('selected-appname').value = '';
@@ -83,24 +81,10 @@ function clearForm() {
     document.getElementById('request-text').value = '';
     document.getElementById('response-container').style.display = 'none';
     document.getElementById('share-btn').disabled = true;
-
-    // Clear format selection
-    const formatButtons = document.querySelectorAll('.format-btn');
-    formatButtons.forEach(btn => btn.classList.remove('selected'));
 }
 
 // Setup all event listeners
 function setupEventListeners() {
-    // Format button selection
-    const formatButtons = document.querySelectorAll('.format-btn');
-    formatButtons.forEach(btn => {
-        btn.addEventListener('click', function () {
-            formatButtons.forEach(b => b.classList.remove('selected'));
-            this.classList.add('selected');
-            selectedFormat = this.getAttribute('data-format');
-        });
-    });
-
     // Submit button
     const submitBtn = document.getElementById('submit-btn');
     if (submitBtn) {
@@ -301,7 +285,7 @@ function showLoading() {
 
     // Disable all form inputs and buttons
     const inputs = document.querySelectorAll('#subject, #request-text');
-    const buttons = document.querySelectorAll('.format-btn, #submit-btn, #share-btn');
+    const buttons = document.querySelectorAll('#submit-btn, #share-btn');
 
     inputs.forEach(input => input.disabled = true);
     buttons.forEach(button => button.disabled = true);
@@ -322,7 +306,7 @@ function hideLoading() {
 
     // Re-enable all form inputs and buttons
     const inputs = document.querySelectorAll('#subject, #request-text');
-    const buttons = document.querySelectorAll('.format-btn, #submit-btn');
+    const buttons = document.querySelectorAll('#submit-btn');
 
     inputs.forEach(input => input.disabled = false);
     buttons.forEach(button => button.disabled = false);
@@ -429,6 +413,29 @@ function displayResponse(responseText) {
             // Remove all code blocks before displaying
             let cleanedText = responseText;
 
+            // Remove Gemini's meta-messages (introductory and concluding statements)
+            // Remove lines like "Okay, I will assist you with..."
+            cleanedText = cleanedText.replace(/^Okay,?\s+I\s+will\s+assist\s+you.*?\.(\s*\n)*/im, '');
+            cleanedText = cleanedText.replace(/^Sure,?\s+I\s+will\s+help.*?\.(\s*\n)*/im, '');
+            cleanedText = cleanedText.replace(/^Sure,?\s+I\s+can\s+help.*?\.(\s*\n)*/im, '');
+            cleanedText = cleanedText.replace(/^I\s+will\s+assist.*?\.(\s*\n)*/im, '');
+            cleanedText = cleanedText.replace(/^I\s+will\s+help.*?\.(\s*\n)*/im, '');
+
+            // Remove lines that reference the application name
+            cleanedText = cleanedText.replace(/with\s+the\s+['"'].*?['"']\s+application.*?\.(\s*\n)*/gi, '');
+
+            // Remove "Here is..." introductory lines
+            cleanedText = cleanedText.replace(/^Here\s+is\s+.*?:(\s*\n)*/im, '');
+            cleanedText = cleanedText.replace(/^Here\s+are\s+.*?:(\s*\n)*/im, '');
+            cleanedText = cleanedText.replace(/^Below\s+is\s+.*?:(\s*\n)*/im, '');
+            cleanedText = cleanedText.replace(/^Below\s+are\s+.*?:(\s*\n)*/im, '');
+
+            // Remove concluding statements like "I hope this helps"
+            cleanedText = cleanedText.replace(/I\s+hope\s+this\s+helps.*?\.?$/im, '');
+            cleanedText = cleanedText.replace(/Please\s+let\s+me\s+know\s+if.*?\.?$/im, '');
+            cleanedText = cleanedText.replace(/Let\s+me\s+know\s+if.*?\.?$/im, '');
+            cleanedText = cleanedText.replace(/Feel\s+free\s+to\s+ask.*?\.?$/im, '');
+
             // Remove all code blocks (```...```) regardless of language
             cleanedText = cleanedText.replace(/```[\s\S]*?```/g, '');
 
@@ -440,6 +447,9 @@ function displayResponse(responseText) {
 
             // Clean up multiple consecutive newlines
             cleanedText = cleanedText.replace(/\n{3,}/g, '\n\n');
+
+            // Trim leading and trailing whitespace
+            cleanedText = cleanedText.trim();
 
             // Convert Markdown to HTML
             const htmlContent = marked.parse(cleanedText);

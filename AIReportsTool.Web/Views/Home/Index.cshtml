@@ -36,9 +36,9 @@
 
             <div class="feature-card">
                 <div class="feature-icon">📊</div>
-                <h3 class="feature-title">@(isArabic ? "تنسيقات متعددة" : "Multiple Formats")</h3>
+                <h3 class="feature-title">@(isArabic ? "استجابة ذكية" : "Smart Response")</h3>
                 <p class="feature-description">
-                    @(isArabic ? "جداول، رسوم بيانية، تقارير، وبريد إلكتروني" : "Tables, charts, reports, and email")
+                    @(isArabic ? "يفهم الذكاء الاصطناعي طلبك ويختار التنسيق الأنسب تلقائياً" : "AI understands your request and automatically chooses the best format")
                 </p>
             </div>
 
@@ -46,7 +46,7 @@
                 <div class="feature-icon">🔄</div>
                 <h3 class="feature-title">@(isArabic ? "سهل المشاركة" : "Easy Sharing")</h3>
                 <p class="feature-description">
-                    @(isArabic ? "شارك تقاريرك عبر البريد أو التحميل أو الطباعة" : "Share via email, download, or print")
+                    @(isArabic ? "شارك تقاريرك عبر الطباعة أو PDF أو Word" : "Share via print, PDF, or Word")
                 </p>
             </div>
         </div>
@@ -84,39 +84,10 @@
                 <div class="step-card">
                     <div class="step-number">3</div>
                     <div class="step-content">
-                        <div class="step-icon">🎨</div>
-                        <h3 class="step-title">@(isArabic ? "اختر التنسيق" : "Choose Format")</h3>
-                        <p class="step-description">
-                            @(isArabic ? "حدد نوع التقرير الذي تريده:" : "Select the type of report you want:")
-                        </p>
-                        <div class="format-examples">
-                            <div class="format-example">
-                                <span class="format-example-icon">📊</span>
-                                <span>@(isArabic ? "جداول - للبيانات المنظمة" : "Tables - For organized data")</span>
-                            </div>
-                            <div class="format-example">
-                                <span class="format-example-icon">📈</span>
-                                <span>@(isArabic ? "رسوم بيانية - للتحليل المرئي" : "Charts - For visual analysis")</span>
-                            </div>
-                            <div class="format-example">
-                                <span class="format-example-icon">📄</span>
-                                <span>@(isArabic ? "تقرير - للمستندات الشاملة" : "Report - For comprehensive documents")</span>
-                            </div>
-                            <div class="format-example">
-                                <span class="format-example-icon">📧</span>
-                                <span>@(isArabic ? "بريد إلكتروني - للمراسلات الرسمية" : "Email - For official correspondence")</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="step-card">
-                    <div class="step-number">4</div>
-                    <div class="step-content">
                         <div class="step-icon">🚀</div>
                         <h3 class="step-title">@(isArabic ? "أرسل واحصل على النتيجة" : "Submit & Get Results")</h3>
                         <p class="step-description">
-                            @(isArabic ? "اضغط على زر الإرسال واحصل على تقريرك فوراً. يمكنك بعدها مشاركته أو تحميله أو طباعته" : "Click submit and get your report instantly. You can then share, download, or print it")
+                            @(isArabic ? "اضغط على زر الإرسال واحصل على تقريرك فوراً. سيقوم الذكاء الاصطناعي بفهم طلبك واختيار أفضل تنسيق (جداول، رسوم بيانية، نصوص) تلقائياً. يمكنك بعدها مشاركته أو تحميله أو طباعته" : "Click submit and get your report instantly. AI will understand your request and automatically choose the best format (tables, charts, text). You can then share, download, or print it")
                         </p>
                     </div>
                 </div>
@@ -194,28 +165,6 @@
                 </label>
                 <textarea id="request-text" class="form-control" rows="6"
                           placeholder="@(isArabic ? "اكتب تفاصيل طلبك هنا..." : "Write your request details here...")"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">@(isArabic ? "تنسيق الاستجابة" : "Response Format")</label>
-                <div class="format-buttons">
-                    <button type="button" class="format-btn" data-format="tables">
-                        <span class="format-icon">📊</span>
-                        <span>@(isArabic ? "جداول" : "Tables")</span>
-                    </button>
-                    <button type="button" class="format-btn" data-format="charts">
-                        <span class="format-icon">📈</span>
-                        <span>@(isArabic ? "رسوم بيانية" : "Charts")</span>
-                    </button>
-                    <button type="button" class="format-btn" data-format="report">
-                        <span class="format-icon">📄</span>
-                        <span>@(isArabic ? "تقرير" : "Report")</span>
-                    </button>
-                    <button type="button" class="format-btn" data-format="email">
-                        <span class="format-icon">📧</span>
-                        <span>@(isArabic ? "بريد إلكتروني" : "Email")</span>
-                    </button>
-                </div>
             </div>
 
             <div class="form-actions">

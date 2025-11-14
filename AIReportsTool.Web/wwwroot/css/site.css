@@ -225,42 +225,6 @@ textarea.form-control {
     min-height: 120px;
 }
 
-/* Format Buttons */
-.format-buttons {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 1rem;
-}
-
-.format-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1rem;
-    background: #f8f9fa;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 0.95rem;
-}
-
-.format-btn:hover {
-    background: #e3e8ff;
-    border-color: #667eea;
-}
-
-.format-btn.selected {
-    background: #667eea;
-    color: white;
-    border-color: #667eea;
-}
-
-.format-icon {
-    font-size: 2rem;
-}
-
 /* Form Actions */
 .form-actions {
     display: flex;
@@ -595,10 +559,6 @@ textarea.form-control {
         padding: 1rem;
     }
 
-    .format-buttons {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
     .form-actions {
         flex-direction: column;
     }
@@ -789,26 +749,6 @@ textarea.form-control {
     color: #666;
     line-height: 1.6;
     margin-bottom: 0.75rem;
-}
-
-.format-examples {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-top: 0.75rem;
-}
-
-.format-example {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem;
-    background: white;
-    border-radius: 6px;
-}
-
-.format-example-icon {
-    font-size: 1.5rem;
 }
 
 /* Tips Section */
