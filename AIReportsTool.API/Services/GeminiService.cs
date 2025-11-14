@@ -98,7 +98,10 @@ namespace AIReportsTool.API.Services
                             // Non-retryable error or max retries reached
                             _logger.LogError("Gemini API error: {StatusCode} - {Content}. Endpoint: {Endpoint}",
                                 response.StatusCode, responseContent, endpoint);
-                            throw new Exception($"Gemini API returned error: {response.StatusCode}. Response: {responseContent}");
+
+                            // Parse and throw user-friendly error message
+                            var friendlyError = ParseGeminiError(responseContent, (int)response.StatusCode);
+                            throw new Exception(friendlyError);
                         }
 
                         // Success - parse the response
@@ -153,13 +156,67 @@ namespace AIReportsTool.API.Services
                 }
 
                 // All retries exhausted
-                throw new Exception($"Gemini API failed after {maxRetries} attempts. Last response: {responseContent}");
+                var finalError = string.IsNullOrEmpty(responseContent)
+                    ? "We're having trouble connecting right now. Please wait a few minutes and try again."
+                    : ParseGeminiError(responseContent, 503); // Assume 503 if we exhausted retries
+                throw new Exception(finalError);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error calling Gemini API");
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Parses Gemini API error response and returns a user-friendly message
+        /// </summary>
+        private string ParseGeminiError(string errorResponse, int statusCode)
+        {
+            try
+            {
+                // Try to parse the JSON error response
+                using var jsonDoc = JsonDocument.Parse(errorResponse);
+                var root = jsonDoc.RootElement;
+
+                // Check if response has error object
+                if (root.TryGetProperty("error", out var errorObj))
+                {
+                    var errorCode = errorObj.TryGetProperty("code", out var codeEl) ? codeEl.GetInt32() : statusCode;
+                    var errorMessage = errorObj.TryGetProperty("message", out var msgEl) ? msgEl.GetString() : null;
+
+                    // Return user-friendly message based on error code
+                    return GetFriendlyErrorMessage(errorCode, errorMessage);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not parse Gemini error response");
+            }
+
+            // Fallback: return friendly message based on status code only
+            return GetFriendlyErrorMessage(statusCode, null);
+        }
+
+        /// <summary>
+        /// Returns a user-friendly error message based on error code
+        /// </summary>
+        private string GetFriendlyErrorMessage(int errorCode, string? originalMessage)
+        {
+            return errorCode switch
+            {
+                400 => "Oops! Something's not quite right with your request. Please try again with different wording.",
+                401 => "We couldn't verify your access. Please contact our support team for assistance.",
+                403 => "You don't have permission to use this feature right now. Please contact support if you think this is a mistake.",
+                404 => "We're having trouble connecting to our system. Please try again in a few minutes or contact support.",
+                429 => "Whoa! Slow down a bit. You've sent too many requests. Please wait a moment and try again.",
+                500 => "Something went wrong on our end. Don't worry, it's not your fault! Please try again in a few minutes.",
+                503 => "We're experiencing high demand right now. Please wait a moment and try again.",
+                504 => "Your request is taking longer than expected. Please try again.",
+                _ => !string.IsNullOrEmpty(originalMessage) && !originalMessage.Contains("{") && !originalMessage.Contains("}")
+                    ? originalMessage // Use original message if it's not JSON
+                    : "Something unexpected happened. Please try again, and if the problem continues, contact our support team."
+            };
         }
 
         /// <summary>
