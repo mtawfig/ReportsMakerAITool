@@ -112,31 +112,31 @@ namespace AIReportsTool.API.Controllers
 
                 var usernameParam = OracleDbService.CreateInputParameter(
                     "p_username",
-                    OracleDbType.Varchar2,
+                    OracleDbType.NVarchar2,
                     payload.Username ?? string.Empty
                 );
 
                 var subjectParam = OracleDbService.CreateInputParameter(
                     "p_subject",
-                    OracleDbType.Varchar2,
+                    OracleDbType.NVarchar2,
                     payload.Subject
                 );
 
                 var requestTextParam = OracleDbService.CreateInputParameter(
                     "p_request_text",
-                    OracleDbType.Clob,
+                    OracleDbType.NClob,
                     payload.RequestText
                 );
 
                 var responseFormatParam = OracleDbService.CreateInputParameter(
                     "p_response_format",
-                    OracleDbType.Varchar2,
+                    OracleDbType.NVarchar2,
                     DBNull.Value // Will be set when format selection is implemented in UI
                 );
 
                 var tokenParam = OracleDbService.CreateInputParameter(
                     "p_token",
-                    OracleDbType.Varchar2,
+                    OracleDbType.NVarchar2,
                     string.IsNullOrWhiteSpace(payload.Token) ? DBNull.Value : payload.Token
                 );
 
@@ -153,7 +153,7 @@ namespace AIReportsTool.API.Controllers
 
                 var messageParam = OracleDbService.CreateOutputParameter(
                     "p_message",
-                    OracleDbType.Varchar2,
+                    OracleDbType.NVarchar2,
                     4000
                 );
 
@@ -235,7 +235,7 @@ namespace AIReportsTool.API.Controllers
 
                 var responseTextParam = OracleDbService.CreateInputParameter(
                     "p_response_text",
-                    OracleDbType.Clob,
+                    OracleDbType.NClob,
                     responseText
                 );
 
@@ -438,7 +438,7 @@ namespace AIReportsTool.API.Controllers
             string dbProvider,
             string dbStructureJson)
         {
-            var prompt = $@"You are an expert SQL query generator. Based on the user's request, generate an appropriate SQL query that matches their requirements.
+            var prompt = $@"You are an expert SQL query generator with intelligent matching capabilities. Based on the user's request, generate an appropriate SQL query that matches their requirements using smart, flexible matching.
 
 **User Request:**
 Subject: {subject}
@@ -454,9 +454,33 @@ Database Structure (JSON):
 2. Study the provided database structure JSON which contains all tables, columns, and data types.
 3. Generate a valid SQL query that is compatible with {dbProvider} database syntax.
 4. The query should be optimized, efficient, and follow best practices for {dbProvider}.
-5. Use appropriate table names, column names, and data types as defined in the database structure.
-6. Include appropriate JOINs if multiple tables are needed.
-7. Add WHERE clauses, GROUP BY, ORDER BY as needed based on the user's request.
+
+**CRITICAL - INTELLIGENT MATCHING RULES:**
+5. **Fuzzy/Partial Text Matching**: When the user searches for text values, use LIKE patterns with wildcards (%) for flexible matching, NOT exact equality (=).
+   - Example: If user asks for ""Programming Section"", search for columns LIKE '%Programming%' to match ""Programming & Applications"", ""Programming Section"", etc.
+   - Always use UPPER() or LOWER() functions for case-insensitive searches.
+
+6. **Name Variations**: When searching for names, account for common variations and spellings.
+   - Example: ""Abdalla"" should match ""Abdallah"", ""Abdullah"", ""Abd Allah"", ""Abdalla"", etc.
+   - Use OR conditions with LIKE patterns: WHERE UPPER(Name) LIKE '%ABDALLA%' OR UPPER(Name) LIKE '%ABDULLAH%' OR UPPER(Name) LIKE '%ABD ALLAH%'
+
+7. **Semantic Understanding**: Interpret user intent, not just literal column names.
+   - If user asks for ""age > 40"" but there's no AGE column, look for DOB, BirthDate, DateOfBirth, or similar date columns
+   - Calculate age using appropriate date functions for {dbProvider}:
+     * Oracle: FLOOR((SYSDATE - DOB) / 365.25)
+     * SQL Server: DATEDIFF(year, BirthDate, GETDATE())
+     * MySQL: TIMESTAMPDIFF(YEAR, DateOfBirth, CURDATE())
+
+8. **Flexible Column Matching**: Match column names intelligently, not just exactly.
+   - ""employee code"" could be: EmpCode, EmployeeCode, EMP_CODE, EMPLOYEE_ID, etc.
+   - ""name"" could be: Name, EmpName, EmployeeName, FullName, FIRST_NAME + LAST_NAME, etc.
+   - Look for similar or related columns in the database structure.
+
+9. **Case-Insensitive Searches**: ALWAYS use UPPER() or LOWER() functions for text comparisons to ensure case-insensitive matching.
+
+10. **Smart Sorting**: If user mentions ""ascending"" or ""descending"", apply ORDER BY with ASC or DESC respectively.
+
+11. Include appropriate JOINs if multiple tables are needed based on foreign key relationships in the structure.
 
 **Response Format:**
 Please provide your response in the following format:
@@ -466,18 +490,19 @@ Please provide your response in the following format:
 
 ## SQL Query
 ```sql
-[Your generated SQL query here - write clean, formatted SQL code]
+[Your generated SQL query here - write clean, formatted SQL code with intelligent matching logic]
 ```
 
 ## Explanation
-[Brief explanation of what the query does, which tables it uses, and any important details about the logic]
+[Brief explanation of what the query does, which tables it uses, and any important details about the intelligent matching logic used]
 
 **Important:**
 - Do NOT include any introductory or concluding statements like ""I will help you"" or ""I hope this helps""
 - Start directly with the Summary section
 - Make sure the SQL syntax is compatible with {dbProvider}
 - Use proper SQL formatting with appropriate indentation
-- Only use tables and columns that exist in the provided database structure";
+- Only use tables and columns that exist in the provided database structure
+- ALWAYS apply intelligent, flexible matching as described above - never use exact equality for text searches";
 
             return prompt;
         }
