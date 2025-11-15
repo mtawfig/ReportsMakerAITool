@@ -350,14 +350,65 @@ namespace AIReportsTool.API.Controllers
                 catch (Exception geminiEx)
                 {
                     _logger.LogError(geminiEx, "Gemini API call failed");
-                    geminiResponse = $"Error generating SQL query: {geminiEx.Message}";
+                    return Json(new RequestResponseModel
+                    {
+                        Status = 0,
+                        Message = "Error generating SQL query",
+                        ResponseText = geminiEx.Message
+                    });
                 }
+
+                // Extract SQL query from Gemini response
+                var sqlQuery = ExtractSqlQueryFromResponse(geminiResponse);
+
+                if (string.IsNullOrWhiteSpace(sqlQuery))
+                {
+                    _logger.LogWarning("Could not extract SQL query from Gemini response");
+                    return Json(new RequestResponseModel
+                    {
+                        Status = 0,
+                        Message = "Failed to extract SQL query from AI response",
+                        ResponseText = geminiResponse
+                    });
+                }
+
+                // Log the generated SQL query
+                _logger.LogInformation("Generated SQL Query: {SqlQuery}", sqlQuery);
+
+                // Execute the SQL query based on database provider
+                System.Data.DataTable queryResults;
+                try
+                {
+                    queryResults = await ExecuteSqlQuery(
+                        sqlQuery,
+                        appDbDetails.DbProvider,
+                        appDbDetails.DbConnection
+                    );
+                }
+                catch (Exception queryEx)
+                {
+                    _logger.LogError(queryEx, "Error executing SQL query");
+                    return Json(new RequestResponseModel
+                    {
+                        Status = 0,
+                        Message = $"Error executing query: {queryEx.Message}",
+                        ResponseText = $"SQL Query:\n{sqlQuery}\n\nError: {queryEx.Message}"
+                    });
+                }
+
+                // Convert DataTable to JSON-friendly format
+                var resultData = ConvertDataTableToJson(queryResults);
 
                 var response = new RequestResponseModel
                 {
                     Status = 1,
-                    Message = "Query generated successfully",
-                    ResponseText = geminiResponse
+                    Message = "Query executed successfully",
+                    ResponseText = JsonSerializer.Serialize(new
+                    {
+                        SqlQuery = sqlQuery,
+                        Summary = ExtractSummaryFromResponse(geminiResponse),
+                        Results = resultData
+                    })
                 };
 
                 return Ok(response);
@@ -428,6 +479,208 @@ Please provide your response in the following format:
 - Only use tables and columns that exist in the provided database structure";
 
             return prompt;
+        }
+
+        /// <summary>
+        /// Extracts SQL query from Gemini response (from ```sql code block)
+        /// </summary>
+        private string ExtractSqlQueryFromResponse(string response)
+        {
+            try
+            {
+                // Look for SQL code block: ```sql ... ```
+                var sqlMatch = System.Text.RegularExpressions.Regex.Match(
+                    response,
+                    @"```sql\s*([\s\S]*?)```",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase
+                );
+
+                if (sqlMatch.Success && sqlMatch.Groups.Count > 1)
+                {
+                    return sqlMatch.Groups[1].Value.Trim();
+                }
+
+                return string.Empty;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error extracting SQL query from response");
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Extracts summary section from Gemini response
+        /// </summary>
+        private string ExtractSummaryFromResponse(string response)
+        {
+            try
+            {
+                // Look for content between ## Summary and ## SQL Query
+                var summaryMatch = System.Text.RegularExpressions.Regex.Match(
+                    response,
+                    @"##\s*Summary\s*([\s\S]*?)##\s*SQL Query",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase
+                );
+
+                if (summaryMatch.Success && summaryMatch.Groups.Count > 1)
+                {
+                    return summaryMatch.Groups[1].Value.Trim();
+                }
+
+                return string.Empty;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error extracting summary from response");
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Executes SQL query based on database provider
+        /// </summary>
+        private async Task<System.Data.DataTable> ExecuteSqlQuery(
+            string sqlQuery,
+            string dbProvider,
+            string connectionString)
+        {
+            _logger.LogInformation("Executing SQL query for provider: {DbProvider}", dbProvider);
+
+            switch (dbProvider.ToUpperInvariant())
+            {
+                case "ORACLE":
+                    return await ExecuteOracleQuery(sqlQuery, connectionString);
+
+                case "SQLSERVER":
+                    return await ExecuteSqlServerQuery(sqlQuery, connectionString);
+
+                case "MYSQL":
+                    return await ExecuteMySqlQuery(sqlQuery, connectionString);
+
+                default:
+                    throw new NotSupportedException($"Database provider '{dbProvider}' is not supported");
+            }
+        }
+
+        /// <summary>
+        /// Executes Oracle SQL query
+        /// </summary>
+        private async Task<System.Data.DataTable> ExecuteOracleQuery(string sqlQuery, string connectionString)
+        {
+            using var connection = new OracleConnection(connectionString);
+            await connection.OpenAsync();
+
+            using var command = new OracleCommand(sqlQuery, connection);
+            command.CommandTimeout = 30; // 30 seconds timeout
+
+            using var adapter = new OracleDataAdapter(command);
+            var dataTable = new System.Data.DataTable();
+            adapter.Fill(dataTable);
+
+            return dataTable;
+        }
+
+        /// <summary>
+        /// Executes SQL Server query
+        /// </summary>
+        private async Task<System.Data.DataTable> ExecuteSqlServerQuery(string sqlQuery, string connectionString)
+        {
+            using var connection = new Microsoft.Data.SqlClient.SqlConnection(connectionString);
+            await connection.OpenAsync();
+
+            using var command = new Microsoft.Data.SqlClient.SqlCommand(sqlQuery, connection);
+            command.CommandTimeout = 30;
+
+            using var adapter = new Microsoft.Data.SqlClient.SqlDataAdapter(command);
+            var dataTable = new System.Data.DataTable();
+            adapter.Fill(dataTable);
+
+            return dataTable;
+        }
+
+        /// <summary>
+        /// Executes MySQL query
+        /// </summary>
+        private async Task<System.Data.DataTable> ExecuteMySqlQuery(string sqlQuery, string connectionString)
+        {
+            using var connection = new MySql.Data.MySqlClient.MySqlConnection(connectionString);
+            await connection.OpenAsync();
+
+            using var command = new MySql.Data.MySqlClient.MySqlCommand(sqlQuery, connection);
+            command.CommandTimeout = 30;
+
+            using var adapter = new MySql.Data.MySqlClient.MySqlDataAdapter(command);
+            var dataTable = new System.Data.DataTable();
+            adapter.Fill(dataTable);
+
+            return dataTable;
+        }
+
+        /// <summary>
+        /// Converts DataTable to JSON-friendly list of dictionaries
+        /// </summary>
+        private List<Dictionary<string, object?>> ConvertDataTableToJson(System.Data.DataTable dataTable)
+        {
+            var results = new List<Dictionary<string, object?>>();
+
+            foreach (System.Data.DataRow row in dataTable.Rows)
+            {
+                var rowData = new Dictionary<string, object?>();
+
+                foreach (System.Data.DataColumn column in dataTable.Columns)
+                {
+                    var value = row[column];
+
+                    // Convert DBNull to null
+                    if (value == DBNull.Value)
+                    {
+                        rowData[column.ColumnName] = null;
+                    }
+                    // Format dates as dd/MM/yyyy
+                    else if (value is DateTime dateValue)
+                    {
+                        rowData[column.ColumnName] = dateValue.ToString("dd/MM/yyyy");
+                    }
+                    // Convert Oracle-specific types
+                    else if (value.GetType().Name == "OracleDecimal")
+                    {
+                        var oracleDecimal = (dynamic)value;
+                        rowData[column.ColumnName] = oracleDecimal.IsNull ? null : (decimal?)oracleDecimal.Value;
+                    }
+                    else if (value.GetType().Name == "OracleString")
+                    {
+                        var oracleString = (dynamic)value;
+                        rowData[column.ColumnName] = oracleString.IsNull ? null : (string?)oracleString.Value;
+                    }
+                    else if (value.GetType().Name == "OracleClob")
+                    {
+                        var oracleClob = (dynamic)value;
+                        rowData[column.ColumnName] = oracleClob.IsNull ? null : (string?)oracleClob.Value;
+                    }
+                    else if (value.GetType().Name == "OracleDate")
+                    {
+                        var oracleDate = (dynamic)value;
+                        if (!oracleDate.IsNull)
+                        {
+                            DateTime dt = oracleDate.Value;
+                            rowData[column.ColumnName] = dt.ToString("dd/MM/yyyy");
+                        }
+                        else
+                        {
+                            rowData[column.ColumnName] = null;
+                        }
+                    }
+                    else
+                    {
+                        rowData[column.ColumnName] = value;
+                    }
+                }
+
+                results.Add(rowData);
+            }
+
+            return results;
         }
     }
 }

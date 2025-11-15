@@ -433,11 +433,27 @@ async function handleGetQuery() {
         const result = await response.json();
 
         if (result.Status === 1) {
-            // Success
-            lastResponseText = result.ResponseText;
-            displayResponse(result.ResponseText, false); // false = keep code blocks (for SQL query)
-            enableShareButton();
-            showMessage('success', result.Message);
+            // Success - parse the response which contains SQL query and results
+            try {
+                const data = JSON.parse(result.ResponseText);
+
+                // Log SQL query to console
+                console.log('Generated SQL Query:');
+                console.log(data.SqlQuery);
+
+                // Display the summary and results table
+                displayQueryResults(data);
+
+                lastResponseText = result.ResponseText;
+                enableShareButton();
+                showMessage('success', result.Message);
+            } catch (parseError) {
+                console.error('Error parsing query response:', parseError);
+                showMessage('error', window.isArabic ?
+                    'حدث خطأ في معالجة النتائج' :
+                    'Error processing results'
+                );
+            }
         } else {
             // Error
             showMessage('error', result.Message || (window.isArabic ?
@@ -533,6 +549,82 @@ function displayResponse(responseText, removeCodeBlocks = false) {
         responseContainer.style.display = 'block';
         responseContainer.scrollIntoView({ behavior: 'smooth' });
     }
+}
+
+// Display query results with summary and data table
+function displayQueryResults(data) {
+    const responseContainer = document.getElementById('response-container');
+    const responseTextElement = document.getElementById('response-text');
+
+    if (responseContainer && responseTextElement) {
+        let html = '';
+
+        // Display summary if available
+        if (data.Summary && data.Summary.trim()) {
+            html += `<div class="query-summary">
+                <h3>${window.isArabic ? 'الملخص' : 'Summary'}</h3>
+                <p>${escapeHtml(data.Summary)}</p>
+            </div>`;
+        }
+
+        // Display results table
+        if (data.Results && data.Results.length > 0) {
+            html += `<div class="query-results">
+                <h3>${window.isArabic ? 'النتائج' : 'Results'} (${data.Results.length} ${window.isArabic ? 'صف' : 'rows'})</h3>
+                ${buildResultsTable(data.Results)}
+            </div>`;
+        } else {
+            html += `<div class="query-results">
+                <p class="no-results">${window.isArabic ? 'لا توجد نتائج' : 'No results found'}</p>
+            </div>`;
+        }
+
+        responseTextElement.innerHTML = html;
+        responseContainer.style.display = 'block';
+        responseContainer.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+// Build HTML table from query results
+function buildResultsTable(results) {
+    if (!results || results.length === 0) {
+        return '<p>No data</p>';
+    }
+
+    // Get column names from first row
+    const columns = Object.keys(results[0]);
+
+    let html = '<div class="table-responsive"><table class="results-table">';
+
+    // Table header
+    html += '<thead><tr>';
+    columns.forEach(column => {
+        html += `<th>${escapeHtml(column)}</th>`;
+    });
+    html += '</tr></thead>';
+
+    // Table body
+    html += '<tbody>';
+    results.forEach(row => {
+        html += '<tr>';
+        columns.forEach(column => {
+            const value = row[column];
+            const displayValue = value === null || value === undefined ? '<span class="null-value">NULL</span>' : escapeHtml(String(value));
+            html += `<td>${displayValue}</td>`;
+        });
+        html += '</tr>';
+    });
+    html += '</tbody>';
+
+    html += '</table></div>';
+    return html;
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // Detect and render charts from Gemini response
