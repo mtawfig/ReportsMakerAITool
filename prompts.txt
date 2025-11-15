@@ -1,6 +1,10 @@
+To optimize the API understanding of the request when it's in Arabic let the API use the NameArabicTranslation of tables and columns in the application db structure json provided. The issue is some requests are not understanable by the api correctly. Examples: Department translation is الإدارة and Section translation is القسم and employee and staff are the same meaning. When user request "قائمة كل الإدارات مع عدد الأقسام و عدد الموئفين في كل ادارة" then the API should understand "All departments list with number of sections and number of employees of the department" All NameArabicTranslations will be in the provided json from
+
+#######################################
+
 {
     "Provider": "ORACLE",
-    "Comments": "Time Attendance System Database",
+    "Comments": "Personnel Information System Database",
     "Tables": [
         {
             "Name": "DEPARTMENT_MASTER",
@@ -214,3 +218,4 @@
         }
     ]
 }
+
