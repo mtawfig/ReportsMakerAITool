@@ -441,8 +441,7 @@ namespace AIReportsTool.API.Controllers
             var prompt = $@"You are an expert SQL query generator with intelligent matching capabilities. Based on the user's request, generate an appropriate SQL query that matches their requirements using smart, flexible matching.
 
 **User Request:**
-Subject: {subject}
-Details: {requestText}
+{requestText}
 
 **Database Information:**
 Database Type: {dbProvider}
@@ -450,19 +449,29 @@ Database Structure (JSON):
 {dbStructureJson}
 
 **Instructions:**
-1. Carefully analyze the user's request (subject and details) to understand what data they want to retrieve or manipulate.
+1. Carefully analyze the user's request to understand what data they want to retrieve or manipulate.
 2. Study the provided database structure JSON which contains all tables, columns, and data types.
 3. Generate a valid SQL query that is compatible with {dbProvider} database syntax.
 4. The query should be optimized, efficient, and follow best practices for {dbProvider}.
 
 **CRITICAL - INTELLIGENT MATCHING RULES:**
-5. **Fuzzy/Partial Text Matching**: When the user searches for text values, use LIKE patterns with wildcards (%) for flexible matching, NOT exact equality (=).
+
+5. **AUTOMATIC Name Variation Detection**: When searching for ANY name (person, place, department, etc.), AUTOMATICALLY include ALL common variations WITHOUT the user having to specify them.
+   - IMPORTANT: Even if user asks for only ""Mostafa"", you MUST automatically include ""Mustafa"", ""Moustafa"", ""Mustafah"", etc.
+   - Examples of automatic variations to include:
+     * ""Mostafa"" → MUST include: Mostafa, Mustafa, Moustafa, Mustafah, Mostafah
+     * ""Abdalla"" → MUST include: Abdallah, Abdullah, Abd Allah, Abdalla, Abdulla
+     * ""Mohamed"" → MUST include: Mohammed, Muhammad, Mohamad, Mohammad
+     * ""Ahmed"" → MUST include: Ahmad, Ahmmed, Achmed
+     * ""Ali"" → MUST include: Aly, Alee
+     * ""Programming"" → MUST include: Programming, Programing, Program
+   - Use multiple OR conditions with LIKE patterns:
+     WHERE UPPER(Name) LIKE '%MOSTAFA%' OR UPPER(Name) LIKE '%MUSTAFA%' OR UPPER(Name) LIKE '%MOUSTAFA%'
+   - This applies to ALL name searches, not just when user explicitly asks for variations
+
+6. **Fuzzy/Partial Text Matching**: When the user searches for text values, use LIKE patterns with wildcards (%) for flexible matching, NOT exact equality (=).
    - Example: If user asks for ""Programming Section"", search for columns LIKE '%Programming%' to match ""Programming & Applications"", ""Programming Section"", etc.
    - Always use UPPER() or LOWER() functions for case-insensitive searches.
-
-6. **Name Variations**: When searching for names, account for common variations and spellings.
-   - Example: ""Abdalla"" should match ""Abdallah"", ""Abdullah"", ""Abd Allah"", ""Abdalla"", etc.
-   - Use OR conditions with LIKE patterns: WHERE UPPER(Name) LIKE '%ABDALLA%' OR UPPER(Name) LIKE '%ABDULLAH%' OR UPPER(Name) LIKE '%ABD ALLAH%'
 
 7. **Semantic Understanding**: Interpret user intent, not just literal column names.
    - If user asks for ""age > 40"" but there's no AGE column, look for DOB, BirthDate, DateOfBirth, or similar date columns
@@ -490,11 +499,11 @@ Please provide your response in the following format:
 
 ## SQL Query
 ```sql
-[Your generated SQL query here - write clean, formatted SQL code with intelligent matching logic]
+[Your generated SQL query here - write clean, formatted SQL code with intelligent matching logic and AUTOMATIC name variations]
 ```
 
 ## Explanation
-[Brief explanation of what the query does, which tables it uses, and any important details about the intelligent matching logic used]
+[Brief explanation of what the query does, which tables it uses, and any important details about the intelligent matching logic used, including which name variations were automatically included]
 
 **Important:**
 - Do NOT include any introductory or concluding statements like ""I will help you"" or ""I hope this helps""
@@ -502,7 +511,8 @@ Please provide your response in the following format:
 - Make sure the SQL syntax is compatible with {dbProvider}
 - Use proper SQL formatting with appropriate indentation
 - Only use tables and columns that exist in the provided database structure
-- ALWAYS apply intelligent, flexible matching as described above - never use exact equality for text searches";
+- ALWAYS apply intelligent, flexible matching as described above - never use exact equality for text searches
+- CRITICAL: ALWAYS automatically include name variations even if user doesn't ask for them - this is MANDATORY for all name searches";
 
             return prompt;
         }
