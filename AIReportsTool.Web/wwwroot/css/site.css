@@ -1083,3 +1083,128 @@ textarea.form-control {
     pointer-events: none;
     opacity: 0.6;
 }
+
+/* =======================
+   Query Results Styling
+   ======================= */
+
+/* Query Summary */
+.query-summary {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-left: 4px solid #667eea;
+    border-radius: 8px;
+}
+
+.query-summary h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: #667eea;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.query-summary p {
+    margin: 0;
+    line-height: 1.6;
+    color: #333;
+}
+
+/* Query Results */
+.query-results {
+    margin-top: 2rem;
+}
+
+.query-results h3 {
+    margin-bottom: 1rem;
+    color: #333;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.no-results {
+    padding: 2rem;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+/* Results Table */
+.table-responsive {
+    overflow-x: auto;
+    margin-top: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.results-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    font-size: 0.95rem;
+}
+
+.results-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.results-table thead th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #5a67d8;
+}
+
+.results-table tbody tr {
+    border-bottom: 1px solid #e0e0e0;
+    transition: background-color 0.2s ease;
+}
+
+.results-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.results-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.results-table tbody td {
+    padding: 0.875rem 1rem;
+    color: #333;
+    vertical-align: top;
+}
+
+.results-table .null-value {
+    color: #999;
+    font-style: italic;
+    font-size: 0.85rem;
+}
+
+/* RTL Support for Results Table */
+[dir="rtl"] .results-table thead th,
+[dir="rtl"] .results-table tbody td {
+    text-align: right;
+}
+
+/* Responsive Table on Mobile */
+@media (max-width: 768px) {
+    .results-table {
+        font-size: 0.85rem;
+    }
+
+    .results-table thead th {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    .results-table tbody td {
+        padding: 0.75rem 0.5rem;
+    }
+}
