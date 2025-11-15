@@ -4,34 +4,40 @@
     "Tables": [
         {
             "Name": "DEPARTMENT_MASTER",
+            "NameArabicTranslation": "قائمة الإدارات",
             "Description": "List of all departments",
             "Columns": [
                 {
                     "Name": "WORK_COMP",
+                    "NameArabicTranslation": "رمز الشركة",
                     "Type": "VARCHAR2(5)",
                     "Nullable": "No",
                     "Comments": "SAA for Sharjah Airport Authority, DCA for Department of Civil Avitiation, SMC fom Sharjah Airport Medical Center"
                 },
                 {
                     "Name": "DEPT_CODE",
+                    "NameArabicTranslation": "رمز الإدارة",
                     "Type": "VARCHAR2(5)",
                     "Nullable": "No",
                     "Comments": ""
                 },
                 {
                     "Name": "DEPT_NAME",
+                    "NameArabicTranslation": "اسم الإدارة (إنجليزي)",
                     "Type": "VARCHAR2(50)",
                     "Nullable": "No",
                     "Comments": "English Department Name"
                 },
                 {
                     "Name": "AR_DEPT_NAME",
+                    "NameArabicTranslation": "اسم الإدارة (عربي)",
                     "Type": "VARCHAR2(50)",
                     "Nullable": "No",
                     "Comments": "Arabic Department Name"
                 },
                 {
                     "Name": "ACT",
+                    "NameArabicTranslation": "حالة السجل",
                     "Type": "CHAR(1)",
                     "Nullable": "No",
                     "Comments": "If ACT value is D then the record is considered deleted"
@@ -40,34 +46,40 @@
         },
         {
             "Name": "SECTION_MASTER",
+            "NameArabicTranslation": "قائمة الأقسام",
             "Description": "List of all sections",
             "Columns": [
                 {
                     "Name": "DEPT_CODE2",
+                    "NameArabicTranslation": "رمز الإدارة",
                     "Type": "VARCHAR2(5)",
                     "Nullable": "No",
                     "Comments": "Foriegnkey to DEPT_CODE column in DEPARTMENT_MASTER table"
                 },
                 {
                     "Name": "SECTION_CODE",
+                    "NameArabicTranslation": "رمز القسم",
                     "Type": "VARCHAR2(5)",
                     "Nullable": "No",
                     "Comments": ""
                 },
                 {
                     "Name": "SECTION_NAME",
+                    "NameArabicTranslation": "اسم القسم (إنجليزي)",
                     "Type": "VARCHAR2(50)",
                     "Nullable": "No",
                     "Comments": "English section name"
                 },
                 {
                     "Name": "AR_SECT_NAME",
+                    "NameArabicTranslation": "اسم القسم (عربي)",
                     "Type": "VARCHAR2(50)",
                     "Nullable": "No",
                     "Comments": "Arabic section name"
                 },
                 {
                     "Name": "ACT",
+                    "NameArabicTranslation": "حالة السجل",
                     "Type": "CHAR(1)",
                     "Nullable": "No",
                     "Comments": "If ACT value is D then the record is considered deleted"
@@ -76,28 +88,33 @@
         },
         {
             "Name": "DESIGNATION_MASTER",
+            "NameArabicTranslation": "قائمة المسميات الوظيفية",
             "Description": "All Designations",
             "Columns": [
                 {
                     "Name": "DESIG_CODE",
+                    "NameArabicTranslation": "رمز المسمى الوظيفي",
                     "Type": "VARCHAR2(5)",
                     "Nullable": "",
                     "Comments": ""
                 },
                 {
                     "Name": "DESIGNATION",
+                    "NameArabicTranslation": "المسمى الوظيفي (إنجليزي)",
                     "Type": "VARCHAR2(100)",
                     "Nullable": "No",
                     "Comments": "English Designation Name"
                 },
                 {
                     "Name": "AR_DESIG",
+                    "NameArabicTranslation": "المسمى الوظيفي (عربي)",
                     "Type": "VARCHAR2(100)",
                     "Nullable": "No",
                     "Comments": "Arabic Designation Name"
                 },
                 {
                     "Name": "ACT",
+                    "NameArabicTranslation": "حالة السجل",
                     "Type": "CHAR(1)",
                     "Nullable": "No",
                     "Comments": "If ACT value is D then the record is considered deleted"
@@ -106,46 +123,54 @@
         },
         {
             "Name": "EMPL_MAST",
+            "NameArabicTranslation": "سجل الموظفين",
             "Description": "All employees master data currently active and currently non-active (past)",
             "Columns": [
                 {
                     "Name": "COMP_CODE",
+                    "NameArabicTranslation": "رمز الشركة",
                     "Type": "CHAR(3)",
                     "Nullable": "No",
                     "Comments": ""
                 },
                 {
                     "Name": "EMP_CODE",
+                    "NameArabicTranslation": "رقم الموظف",
                     "Type": "NUMBER",
                     "Nullable": "No",
                     "Comments": ""
                 },
                 {
                     "Name": "NAME",
+                    "NameArabicTranslation": "اسم الموظف (إنجليزي)",
                     "Type": "VARCHAR2(80)",
                     "Nullable": "No",
                     "Comments": "English Employee Name"
                 },
                 {
                     "Name": "AR_NAME",
+                    "NameArabicTranslation": "اسم الموظف (عربي)",
                     "Type": "VARCHAR2(80)",
                     "Nullable": "Yes",
                     "Comments": "Arabic Employee Name"
                 },
                 {
                     "Name": "SECT_CODE",
+                    "NameArabicTranslation": "رمز القسم",
                     "Type": "VARCHAR2(5)",
                     "Nullable": "Yes",
                     "Comments": "Foriegnkey to SECTION_CODE column in SECTION_MASTER table"
                 },
                 {
                     "Name": "DESIG_CODE",
+                    "NameArabicTranslation": "رمز المسمى الوظيفي",
                     "Type": "VARCHAR2(5)",
                     "Nullable": "Yes",
                     "Comments": "Foriegnkey to column DESIG_CODE in table DESIGNATION_MASTER"
                 },
                 {
                     "Name": "ACT",
+                    "NameArabicTranslation": "حالة الموظف",
                     "Type": "CHAR(1)",
                     "Nullable": "No",
                     "Comments": "We condider the employee active where ACT value in A, C, or J"
@@ -154,28 +179,33 @@
         },
         {
             "Name": "EMPAUTOPUNCH",
+            "NameArabicTranslation": "الموظفون المصرح لهم بالبصمة التلقائية",
             "Description": "Employees that are configured don't need to punch in and out for attendance",
             "Columns": [
                 {
                     "Name": "COMPANYID",
+                    "NameArabicTranslation": "رمز الشركة",
                     "Type": "VARCHAR2(3)",
                     "Nullable": "No",
                     "Comments": "SAA for Sharjah Airport Authority, DCA for Department of Civil Avitiation, SMC fom Sharjah Airport Medical Center"
                 },
                 {
                     "Name": "EMP_CODE",
+                    "NameArabicTranslation": "رقم الموظف",
                     "Type": "NUMBER",
                     "Nullable": "No",
-                    "Comments": "Foriegn key to comlumn EMP_CODE in table EMPL_MST where same COMPANYID"
+                    "Comments": "Foriegn key to comlumn EMP_CODE in table EMPL_MAST where same COMPANYID"
                 },
                 {
                     "Name": "STARTDATE",
+                    "NameArabicTranslation": "تاريخ بدء السماح",
                     "Type": "DATE",
                     "Nullable": "No",
                     "Comments": "Start date where employee allowed to auto-punch. Before this date normal attendance in and out"
                 },
                 {
                     "Name": "REMARK",
+                    "NameArabicTranslation": "ملاحظات",
                     "Type": "VARCHAR2(500)",
                     "Nullable": "Yes",
                     "Comments": "Any remark regarding the record entry"
