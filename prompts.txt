@@ -1,1 +1,186 @@
-When I ask for something it should not be strictly same. As example if I sent a request "The employee code along with name and designation of Programming Section employees in SAA company ordered ascending by the employee code." and no section named exactly "Programming Section" but the section name is "Programming & Applications" then the API should understand that I mean this section. This is an example. Another example if I said "I want all employees with name start with Abdalla" then the API should include who start with "Abdalla", "Abdallah", "Abdullah", "Abd Allah", etc. Also it should be not case-sensitive. Another example if I ask for employees whom age is more than 40 and no column with name age or relative but there is column named DOB or BirthDate or relative which has Date then API to understand to calculate age from this column. These are few examples. You can understand what I look for from these examples.
+{
+    "Provider": "ORACLE",
+    "Comments": "Time Attendance System Database",
+    "Tables": [
+        {
+            "Name": "DEPARTMENT_MASTER",
+            "Description": "List of all departments",
+            "Columns": [
+                {
+                    "Name": "WORK_COMP",
+                    "Type": "VARCHAR2(5)",
+                    "Nullable": "No",
+                    "Comments": "SAA for Sharjah Airport Authority, DCA for Department of Civil Avitiation, SMC fom Sharjah Airport Medical Center"
+                },
+                {
+                    "Name": "DEPT_CODE",
+                    "Type": "VARCHAR2(5)",
+                    "Nullable": "No",
+                    "Comments": ""
+                },
+                {
+                    "Name": "DEPT_NAME",
+                    "Type": "VARCHAR2(50)",
+                    "Nullable": "No",
+                    "Comments": "English Department Name"
+                },
+                {
+                    "Name": "AR_DEPT_NAME",
+                    "Type": "VARCHAR2(50)",
+                    "Nullable": "No",
+                    "Comments": "Arabic Department Name"
+                },
+                {
+                    "Name": "ACT",
+                    "Type": "CHAR(1)",
+                    "Nullable": "No",
+                    "Comments": "If ACT value is D then the record is considered deleted"
+                }
+            ]
+        },
+        {
+            "Name": "SECTION_MASTER",
+            "Description": "List of all sections",
+            "Columns": [
+                {
+                    "Name": "DEPT_CODE2",
+                    "Type": "VARCHAR2(5)",
+                    "Nullable": "No",
+                    "Comments": "Foriegnkey to DEPT_CODE column in DEPARTMENT_MASTER table"
+                },
+                {
+                    "Name": "SECTION_CODE",
+                    "Type": "VARCHAR2(5)",
+                    "Nullable": "No",
+                    "Comments": ""
+                },
+                {
+                    "Name": "SECTION_NAME",
+                    "Type": "VARCHAR2(50)",
+                    "Nullable": "No",
+                    "Comments": "English section name"
+                },
+                {
+                    "Name": "AR_SECT_NAME",
+                    "Type": "VARCHAR2(50)",
+                    "Nullable": "No",
+                    "Comments": "Arabic section name"
+                },
+                {
+                    "Name": "ACT",
+                    "Type": "CHAR(1)",
+                    "Nullable": "No",
+                    "Comments": "If ACT value is D then the record is considered deleted"
+                }
+            ]
+        },
+        {
+            "Name": "DESIGNATION_MASTER",
+            "Description": "All Designations",
+            "Columns": [
+                {
+                    "Name": "DESIG_CODE",
+                    "Type": "VARCHAR2(5)",
+                    "Nullable": "",
+                    "Comments": ""
+                },
+                {
+                    "Name": "DESIGNATION",
+                    "Type": "VARCHAR2(100)",
+                    "Nullable": "No",
+                    "Comments": "English Designation Name"
+                },
+                {
+                    "Name": "AR_DESIG",
+                    "Type": "VARCHAR2(100)",
+                    "Nullable": "No",
+                    "Comments": "Arabic Designation Name"
+                },
+                {
+                    "Name": "ACT",
+                    "Type": "CHAR(1)",
+                    "Nullable": "No",
+                    "Comments": "If ACT value is D then the record is considered deleted"
+                }
+            ]
+        },
+        {
+            "Name": "EMPL_MAST",
+            "Description": "All employees master data currently active and currently non-active (past)",
+            "Columns": [
+                {
+                    "Name": "COMP_CODE",
+                    "Type": "CHAR(3)",
+                    "Nullable": "No",
+                    "Comments": ""
+                },
+                {
+                    "Name": "EMP_CODE",
+                    "Type": "NUMBER",
+                    "Nullable": "No",
+                    "Comments": ""
+                },
+                {
+                    "Name": "NAME",
+                    "Type": "VARCHAR2(80)",
+                    "Nullable": "No",
+                    "Comments": "English Employee Name"
+                },
+                {
+                    "Name": "AR_NAME",
+                    "Type": "VARCHAR2(80)",
+                    "Nullable": "Yes",
+                    "Comments": "Arabic Employee Name"
+                },
+                {
+                    "Name": "SECT_CODE",
+                    "Type": "VARCHAR2(5)",
+                    "Nullable": "Yes",
+                    "Comments": "Foriegnkey to SECTION_CODE column in SECTION_MASTER table"
+                },
+                {
+                    "Name": "DESIG_CODE",
+                    "Type": "VARCHAR2(5)",
+                    "Nullable": "Yes",
+                    "Comments": "Foriegnkey to column DESIG_CODE in table DESIGNATION_MASTER"
+                },
+                {
+                    "Name": "ACT",
+                    "Type": "CHAR(1)",
+                    "Nullable": "No",
+                    "Comments": "We condider the employee active where ACT value in A, C, or J"
+                }
+            ]
+        },
+        {
+            "Name": "EMPAUTOPUNCH",
+            "Description": "Employees that are configured don't need to punch in and out for attendance",
+            "Columns": [
+                {
+                    "Name": "COMPANYID",
+                    "Type": "VARCHAR2(3)",
+                    "Nullable": "No",
+                    "Comments": "SAA for Sharjah Airport Authority, DCA for Department of Civil Avitiation, SMC fom Sharjah Airport Medical Center"
+                },
+                {
+                    "Name": "EMP_CODE",
+                    "Type": "NUMBER",
+                    "Nullable": "No",
+                    "Comments": "Foriegn key to comlumn EMP_CODE in table EMPL_MST where same COMPANYID"
+                },
+                {
+                    "Name": "STARTDATE",
+                    "Type": "DATE",
+                    "Nullable": "No",
+                    "Comments": "Start date where employee allowed to auto-punch. Before this date normal attendance in and out"
+                },
+                {
+                    "Name": "REMARK",
+                    "Type": "VARCHAR2(500)",
+                    "Nullable": "Yes",
+                    "Comments": "Any remark regarding the record entry"
+                }
+            ]
+        }
+    ]
+}
