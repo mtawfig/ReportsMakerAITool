@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using AIReportsTool.API.Models;
 using AIReportsTool.API.Services;
 using Oracle.ManagedDataAccess.Client;
+using System.Text.Json;
 
 namespace AIReportsTool.API.Controllers
 {
@@ -350,7 +351,7 @@ namespace AIReportsTool.API.Controllers
                 catch (Exception geminiEx)
                 {
                     _logger.LogError(geminiEx, "Gemini API call failed");
-                    return Json(new RequestResponseModel
+                    return Ok(new RequestResponseModel
                     {
                         Status = 0,
                         Message = "Error generating SQL query",
@@ -364,7 +365,7 @@ namespace AIReportsTool.API.Controllers
                 if (string.IsNullOrWhiteSpace(sqlQuery))
                 {
                     _logger.LogWarning("Could not extract SQL query from Gemini response");
-                    return Json(new RequestResponseModel
+                    return Ok(new RequestResponseModel
                     {
                         Status = 0,
                         Message = "Failed to extract SQL query from AI response",
@@ -388,7 +389,7 @@ namespace AIReportsTool.API.Controllers
                 catch (Exception queryEx)
                 {
                     _logger.LogError(queryEx, "Error executing SQL query");
-                    return Json(new RequestResponseModel
+                    return Ok(new RequestResponseModel
                     {
                         Status = 0,
                         Message = $"Error executing query: {queryEx.Message}",
