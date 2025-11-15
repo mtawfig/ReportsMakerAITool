@@ -338,6 +338,7 @@ namespace AIReportsTool.API.Controllers
 
                 // Call Gemini API to generate query
                 _logger.LogInformation("Calling Gemini API to generate SQL query for AppId: {AppId}", payload.AppId);
+
                 string geminiResponse;
 
                 try
@@ -412,6 +413,96 @@ namespace AIReportsTool.API.Controllers
                     })
                 };
 
+                //insert the request with response into database for logging and recent requests
+                try
+                {
+                    // Create parameters for stored procedure
+                    var appIdParam = OracleDbService.CreateInputParameter(
+                        "p_app_id",
+                        OracleDbType.Int32,
+                        payload.AppId
+                    );
+
+                    var usernameParam = OracleDbService.CreateInputParameter(
+                        "p_username",
+                        OracleDbType.NVarchar2,
+                        payload.Username ?? string.Empty
+                    );
+
+                    var subjectParam = OracleDbService.CreateInputParameter(
+                        "p_subject",
+                        OracleDbType.NVarchar2,
+                        payload.Subject
+                    );
+
+                    var requestTextParam = OracleDbService.CreateInputParameter(
+                        "p_request_text",
+                        OracleDbType.NClob,
+                        payload.RequestText
+                    );
+
+                    var responseFormatParam = OracleDbService.CreateInputParameter(
+                        "p_response_format",
+                        OracleDbType.NVarchar2,
+                        DBNull.Value // Will be set when format selection is implemented in UI
+                    );
+
+                    var tokenParam = OracleDbService.CreateInputParameter(
+                        "p_token",
+                        OracleDbType.NVarchar2,
+                        string.IsNullOrWhiteSpace(payload.Token) ? DBNull.Value : payload.Token
+                    );
+
+                    // Output parameters
+                    var requestIdParam = OracleDbService.CreateOutputParameter(
+                        "p_request_id",
+                        OracleDbType.Int32
+                    );
+
+                    var statusParam = OracleDbService.CreateOutputParameter(
+                        "p_status",
+                        OracleDbType.Int32
+                    );
+
+                    var messageParam = OracleDbService.CreateOutputParameter(
+                        "p_message",
+                        OracleDbType.NVarchar2,
+                        4000
+                    );
+
+                    // Execute stored procedure to insert request
+                    var outParams = await _dbService.ExecuteStoredProcedureWithOutParamsAsync(
+                        "P_IRT_REPORTHELPERTOOL.SP_InsertRequest",
+                        appIdParam,
+                        usernameParam,
+                        subjectParam,
+                        requestTextParam,
+                        responseFormatParam,
+                        tokenParam,
+                        requestIdParam,
+                        statusParam,
+                        messageParam
+                    );
+
+                    // Extract output parameters
+                    var dbStatus = Convert.ToInt32(outParams["p_status"]);
+                    var dbMessage = outParams["p_message"]?.ToString() ?? "Unknown error";
+                    var requestId = outParams["p_request_id"] != DBNull.Value
+                        ? Convert.ToInt32(outParams["p_request_id"])
+                        : 0;
+
+                    if (dbStatus == 1)
+                    {
+                        // Update the request with Gemini response
+                        await UpdateRequestResponseAsync(requestId, geminiResponse);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // log and ignore errors here - we still want to return the response to the user
+                    _logger.LogError(ex, "Error saving the request to database for AppId: {AppId}", payload.AppId);
+                }
+
                 return Ok(response);
             }
             catch (Exception ex)
@@ -451,20 +542,23 @@ Database Structure (JSON):
 **Instructions:**
 1. Carefully analyze the user's request to understand what data they want to retrieve or manipulate.
 2. Study the provided database structure JSON which contains all tables, columns, and data types.
-3. Generate a valid SQL query that is compatible with {dbProvider} database syntax.
-4. The query should be optimized, efficient, and follow best practices for {dbProvider}.
+3. Each table and column in the json of database structure has a ArabicTranslation below the Name to help you understand its meaning when the the user wrote the request in Arabic.
+4. Generate a valid SQL query that is compatible with {dbProvider} database syntax and verify the generated SQL query is valid before sending the response.
+5. The query should be optimized, efficient, and follow best practices for {dbProvider}.
+6. Don't add comments within the SQL query.
+6. ALWAYS apply the following intelligent matching rules to ensure flexible and accurate data retrieval.
 
 **CRITICAL - INTELLIGENT MATCHING RULES:**
 
-5. **AUTOMATIC Name Variation Detection**: When searching for ANY name (person, place, department, etc.), AUTOMATICALLY include ALL common variations WITHOUT the user having to specify them.
-   - IMPORTANT: Even if user asks for only ""Mostafa"", you MUST automatically include ""Mustafa"", ""Moustafa"", ""Mustafah"", etc.
+5. **AUTOMATIC Name Variation Detection**: When searching for ANY condition (person, place, department, section, designation, etc.), AUTOMATICALLY include ALL common variations WITHOUT the user having to specify them.
+   - IMPORTANT: try to cover as many common variations as possible for each condition.
    - Examples of automatic variations to include:
      * ""Mostafa"" → MUST include: Mostafa, Mustafa, Moustafa, Mustafah, Mostafah
      * ""Abdalla"" → MUST include: Abdallah, Abdullah, Abd Allah, Abdalla, Abdulla
      * ""Mohamed"" → MUST include: Mohammed, Muhammad, Mohamad, Mohammad
      * ""Ahmed"" → MUST include: Ahmad, Ahmmed, Achmed
      * ""Ali"" → MUST include: Aly, Alee
-     * ""Programming"" → MUST include: Programming, Programing, Program
+     * ""Programming"" → MUST include: Programming, Programing, software Development
    - Use multiple OR conditions with LIKE patterns:
      WHERE UPPER(Name) LIKE '%MOSTAFA%' OR UPPER(Name) LIKE '%MUSTAFA%' OR UPPER(Name) LIKE '%MOUSTAFA%'
    - This applies to ALL name searches, not just when user explicitly asks for variations
@@ -473,9 +567,8 @@ Database Structure (JSON):
    - Example: If user asks for ""Programming Section"", search for columns LIKE '%Programming%' to match ""Programming & Applications"", ""Programming Section"", etc.
    - Always use UPPER() or LOWER() functions for case-insensitive searches.
 
-7. **Semantic Understanding**: Interpret user intent, not just literal column names.
-   - If user asks for ""age > 40"" but there's no AGE column, look for DOB, BirthDate, DateOfBirth, or similar date columns
-   - Calculate age using appropriate date functions for {dbProvider}:
+7. **Semantic Understanding**: Interpret user intent, not just literal column names. As examples:
+   - If user asks for ""age > 40"" but there's no AGE column, look for DOB, BirthDate, DateOfBirth, or similar date columns, then Calculate age using appropriate date functions for {dbProvider}:
      * Oracle: FLOOR((SYSDATE - DOB) / 365.25)
      * SQL Server: DATEDIFF(year, BirthDate, GETDATE())
      * MySQL: TIMESTAMPDIFF(YEAR, DateOfBirth, CURDATE())

@@ -908,11 +908,11 @@ textarea.form-control {
     display: flex;
     align-items: center;
     gap: 1.5rem;
-    padding: 1.25rem 2rem;
+    /*padding: 1.25rem 2rem;*/
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    border-radius: 12px;
-    margin-bottom: 2rem;
+    border-radius: 12px 12px 0 0;
+    /*margin-bottom: 2rem;*/
 }
 
 .selected-app-icon {

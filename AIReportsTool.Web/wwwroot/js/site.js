@@ -417,6 +417,8 @@ async function handleGetQuery() {
 
     try {
         const payload = {
+            Token: '',
+            Username: '',
             AppId: selectedAppId,
             Subject: subject,
             RequestText: requestText
