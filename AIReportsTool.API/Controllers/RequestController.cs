@@ -498,7 +498,9 @@ Please provide your response in the following format:
 
                 if (sqlMatch.Success && sqlMatch.Groups.Count > 1)
                 {
-                    return sqlMatch.Groups[1].Value.Trim();
+                    var rawSql = sqlMatch.Groups[1].Value.Trim();
+                    // Normalize the SQL to remove line breaks and extra whitespace
+                    return NormalizeSqlQuery(rawSql);
                 }
 
                 return string.Empty;
@@ -507,6 +509,52 @@ Please provide your response in the following format:
             {
                 _logger.LogError(ex, "Error extracting SQL query from response");
                 return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Normalizes SQL query by removing line breaks and extra whitespace
+        /// This ensures the query executes properly without formatting issues
+        /// </summary>
+        private string NormalizeSqlQuery(string sqlQuery)
+        {
+            if (string.IsNullOrWhiteSpace(sqlQuery))
+                return string.Empty;
+
+            try
+            {
+                // Replace all line breaks (CRLF, LF, CR) with spaces
+                var normalized = System.Text.RegularExpressions.Regex.Replace(
+                    sqlQuery,
+                    @"[\r\n]+",
+                    " "
+                );
+
+                // Replace tabs with spaces
+                normalized = normalized.Replace("\t", " ");
+
+                // Replace multiple consecutive spaces with single space
+                normalized = System.Text.RegularExpressions.Regex.Replace(
+                    normalized,
+                    @"\s+",
+                    " "
+                );
+
+                // Trim leading and trailing whitespace
+                normalized = normalized.Trim();
+
+                // Remove trailing semicolon if present (not needed for ADO.NET commands)
+                if (normalized.EndsWith(";"))
+                {
+                    normalized = normalized.Substring(0, normalized.Length - 1).Trim();
+                }
+
+                return normalized;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error normalizing SQL query");
+                return sqlQuery; // Return original if normalization fails
             }
         }
 
