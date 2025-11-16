@@ -493,8 +493,8 @@ namespace AIReportsTool.API.Controllers
 
                     if (dbStatus == 1)
                     {
-                        // Update the request with Gemini response
-                        await UpdateRequestResponseAsync(requestId, geminiResponse);
+                        // Update the request with the formatted response (JSON with SqlQuery, Summary, Results)
+                        await UpdateRequestResponseAsync(requestId, response.ResponseText);
                     }
                 }
                 catch (Exception ex)
