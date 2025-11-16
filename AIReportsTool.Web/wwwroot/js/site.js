@@ -692,8 +692,18 @@ function detectAndRenderCharts(responseText, containerElement) {
     // Try to detect chart data from rendered HTML tables
     const tableChartData = extractChartDataFromTables(containerElement, responseText);
     if (tableChartData) {
-        console.log('Chart data found from table:', tableChartData);
-        renderChart(tableChartData, containerElement);
+        // Check if it's an array of charts or a single chart
+        if (Array.isArray(tableChartData)) {
+            console.log(`Chart data found from tables: ${tableChartData.length} chart(s) to render`);
+            // Render all charts
+            tableChartData.forEach((chartData, index) => {
+                console.log(`Rendering chart ${index + 1}/${tableChartData.length}:`, chartData);
+                renderChart(chartData, containerElement);
+            });
+        } else {
+            console.log('Chart data found from table:', tableChartData);
+            renderChart(tableChartData, containerElement);
+        }
         return;
     }
 
@@ -792,37 +802,91 @@ function extractChartDataFromTables(containerElement, originalText) {
         return null;
     }
 
-    // Try to extract data from the first table
-    const table = tables[0];
-    const rows = table.querySelectorAll('tbody tr');
-    console.log('Table rows found:', rows.length);
+    // Extract data from ALL tables (not just the first one)
+    const allChartsData = [];
 
-    if (rows.length === 0) {
-        // Try without tbody
-        const allRows = table.querySelectorAll('tr');
-        console.log('Total rows (without tbody):', allRows.length);
+    tables.forEach((table, tableIndex) => {
+        console.log(`Processing table ${tableIndex + 1}/${tables.length}`);
 
-        if (allRows.length === 0) {
-            return null;
-        }
+        const rows = table.querySelectorAll('tbody tr');
+        console.log('Table rows found:', rows.length);
 
-        // Extract data from rows (skip header row if exists)
-        const labels = [];
-        const values = [];
+        let labels = [];
+        let values = [];
         let hasNumericData = false;
-        let startIndex = 0;
 
-        // Check if first row is a header
-        const firstRow = allRows[0];
-        const firstRowCells = firstRow.querySelectorAll('th');
-        if (firstRowCells.length > 0) {
-            startIndex = 1; // Skip header row
+        if (rows.length === 0) {
+            // Try without tbody
+            const allRows = table.querySelectorAll('tr');
+            console.log('Total rows (without tbody):', allRows.length);
+
+            if (allRows.length === 0) {
+                console.log(`Table ${tableIndex + 1}: No rows found, skipping`);
+                return; // Skip this table, continue to next
+            }
+
+            // Extract data from rows (skip header row if exists)
+            let startIndex = 0;
+
+            // Check if first row is a header
+            const firstRow = allRows[0];
+            const firstRowCells = firstRow.querySelectorAll('th');
+            if (firstRowCells.length > 0) {
+                startIndex = 1; // Skip header row
+            }
+
+            for (let i = startIndex; i < allRows.length; i++) {
+                const row = allRows[i];
+                const cells = row.querySelectorAll('td, th');
+
+                if (cells.length >= 2) {
+                    const label = cells[0].textContent.trim();
+                    const valueText = cells[1].textContent.trim();
+
+                    // Try to parse as number (remove commas, currency symbols, etc.)
+                    const cleanValue = valueText.replace(/[,%$€£¥]/g, '').trim();
+                    const numericValue = parseFloat(cleanValue);
+
+                    console.log(`Table ${tableIndex + 1}, Row ${i}: "${label}" = "${valueText}" -> ${numericValue}`);
+
+                    if (!isNaN(numericValue)) {
+                        labels.push(label);
+                        values.push(numericValue);
+                        hasNumericData = true;
+                    }
+                }
+            }
+
+            if (!hasNumericData || labels.length === 0) {
+                console.log(`Table ${tableIndex + 1}: No numeric data found, skipping`);
+                return; // Skip this table, continue to next
+            }
+
+            // Get headers for title
+            const headers = table.querySelectorAll('th');
+            let title = 'Data Visualization';
+            if (headers.length >= 2) {
+                title = `${headers[0].textContent.trim()} vs ${headers[1].textContent.trim()}`;
+            }
+
+            // Detect chart type - if no keyword, try to render anyway if we have data
+            const chartType = hasChartKeyword ? detectChartTypeFromContext(originalText) : 'column';
+
+            console.log(`Table ${tableIndex + 1}: Chart data extracted:`, { chartType, labels, values, title });
+
+            // Add to collection
+            allChartsData.push({
+                chartType: chartType,
+                labels: labels,
+                values: values,
+                title: title
+            });
+            return; // Move to next table
         }
 
-        for (let i = startIndex; i < allRows.length; i++) {
-            const row = allRows[i];
-            const cells = row.querySelectorAll('td, th');
-
+        // Logic for tables with tbody
+        rows.forEach((row, index) => {
+            const cells = row.querySelectorAll('td');
             if (cells.length >= 2) {
                 const label = cells[0].textContent.trim();
                 const valueText = cells[1].textContent.trim();
@@ -831,7 +895,7 @@ function extractChartDataFromTables(containerElement, originalText) {
                 const cleanValue = valueText.replace(/[,%$€£¥]/g, '').trim();
                 const numericValue = parseFloat(cleanValue);
 
-                console.log(`Row ${i}: "${label}" = "${valueText}" -> ${numericValue}`);
+                console.log(`Table ${tableIndex + 1}, Row ${index}: "${label}" = "${valueText}" -> ${numericValue}`);
 
                 if (!isNaN(numericValue)) {
                     labels.push(label);
@@ -839,15 +903,15 @@ function extractChartDataFromTables(containerElement, originalText) {
                     hasNumericData = true;
                 }
             }
-        }
+        });
 
         if (!hasNumericData || labels.length === 0) {
-            console.log('No numeric data found in table');
-            return null;
+            console.log(`Table ${tableIndex + 1}: No numeric data found, skipping`);
+            return; // Skip this table, continue to next
         }
 
         // Get headers for title
-        const headers = table.querySelectorAll('th');
+        const headers = table.querySelectorAll('thead th');
         let title = 'Data Visualization';
         if (headers.length >= 2) {
             title = `${headers[0].textContent.trim()} vs ${headers[1].textContent.trim()}`;
@@ -856,64 +920,25 @@ function extractChartDataFromTables(containerElement, originalText) {
         // Detect chart type - if no keyword, try to render anyway if we have data
         const chartType = hasChartKeyword ? detectChartTypeFromContext(originalText) : 'column';
 
-        console.log('Chart data extracted:', { chartType, labels, values, title });
+        console.log(`Table ${tableIndex + 1}: Chart data extracted:`, { chartType, labels, values, title });
 
-        return {
+        // Add to collection
+        allChartsData.push({
             chartType: chartType,
             labels: labels,
             values: values,
             title: title
-        };
-    }
-
-    // Original logic for tables with tbody
-    const labels = [];
-    const values = [];
-    let hasNumericData = false;
-
-    rows.forEach((row, index) => {
-        const cells = row.querySelectorAll('td');
-        if (cells.length >= 2) {
-            const label = cells[0].textContent.trim();
-            const valueText = cells[1].textContent.trim();
-
-            // Try to parse as number (remove commas, currency symbols, etc.)
-            const cleanValue = valueText.replace(/[,%$€£¥]/g, '').trim();
-            const numericValue = parseFloat(cleanValue);
-
-            console.log(`Row ${index}: "${label}" = "${valueText}" -> ${numericValue}`);
-
-            if (!isNaN(numericValue)) {
-                labels.push(label);
-                values.push(numericValue);
-                hasNumericData = true;
-            }
-        }
+        });
     });
 
-    if (!hasNumericData || labels.length === 0) {
-        console.log('No numeric data found in table');
+    // Return all charts data or null if none found
+    if (allChartsData.length === 0) {
+        console.log('No chart data found in any table');
         return null;
     }
 
-    // Get headers for title
-    const headers = table.querySelectorAll('thead th');
-    let title = 'Data Visualization';
-    if (headers.length >= 2) {
-        title = `${headers[0].textContent.trim()} vs ${headers[1].textContent.trim()}`;
-    }
-
-    // Detect chart type - if no keyword, try to render anyway if we have data
-    const chartType = hasChartKeyword ? detectChartTypeFromContext(originalText) : 'column';
-
-    console.log('Chart data extracted:', { chartType, labels, values, title });
-
-    return {
-        chartType: chartType,
-        labels: labels,
-        values: values,
-        title: title
-    };
+    console.log(`Total charts to render: ${allChartsData.length}`);
+    return allChartsData;
 }
 
 // Render chart using Chart.js

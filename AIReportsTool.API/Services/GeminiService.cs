@@ -278,7 +278,15 @@ IMPORTANT INSTRUCTIONS:
 - DO NOT make up or assume any data that is not present in the query results
 - If the user requested specific calculations or aggregations, perform them based on the provided data
 - DO NOT include any code snippets in the response (no JSON, JavaScript, CSS, Python, SQL, or any other programming language code)
-- If the user requests charts (pie charts, bar charts, line charts, etc.), DO NOT include any textual description or section explaining what the chart would display. The charts will be rendered by the application itself, so only include the data in tabular format and other textual analysis
+- If the user requests charts (pie charts, bar charts, line charts, etc.):
+  * DO NOT include any textual description or section explaining what the chart would display
+  * The charts will be rendered by the application itself automatically
+  * CRITICAL: If the user requests MULTIPLE charts (e.g., 2 pie charts, a bar chart and a line chart), you MUST create a SEPARATE table for EACH chart
+  * Each table should contain ONLY the data for that specific chart (e.g., if user wants a pie chart of sections per department and another pie chart of employees per department, create two separate tables)
+  * Add a clear heading above each table indicating what it represents (e.g., '### Sections per Department', '### Employees per Department')
+  * Each table should have exactly 2 columns: the category/label column and the value column
+  * DO NOT combine multiple charts' data into one table
+- Only include the data in tabular format and other textual analysis
 
 Please provide a detailed, well-formatted report that addresses the user's request using the provided data.";
 
