@@ -236,7 +236,11 @@ Subject: {subject}
 Request:
 {requestText}
 
-Please provide a detailed, well-formatted response that addresses this request. Include relevant analysis, insights, and recommendations where appropriate.";
+Please provide a detailed, well-formatted response that addresses this request. Include relevant analysis, insights, and recommendations where appropriate.
+
+IMPORTANT INSTRUCTIONS:
+- DO NOT include any code snippets in the response (no JSON, JavaScript, CSS, Python, SQL, or any other programming language code)
+- If the user requests charts (pie charts, bar charts, line charts, etc.), DO NOT include any textual description or section explaining what the chart would display. The charts will be rendered by the application itself, so only include textual analysis";
 
             return await GenerateContentAsync(prompt);
         }
@@ -273,6 +277,8 @@ IMPORTANT INSTRUCTIONS:
 - Include the table with proper headers and all relevant data rows
 - DO NOT make up or assume any data that is not present in the query results
 - If the user requested specific calculations or aggregations, perform them based on the provided data
+- DO NOT include any code snippets in the response (no JSON, JavaScript, CSS, Python, SQL, or any other programming language code)
+- If the user requests charts (pie charts, bar charts, line charts, etc.), DO NOT include any textual description or section explaining what the chart would display. The charts will be rendered by the application itself, so only include the data in tabular format and other textual analysis
 
 Please provide a detailed, well-formatted report that addresses the user's request using the provided data.";
 
