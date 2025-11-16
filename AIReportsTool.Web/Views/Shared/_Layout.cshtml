@@ -11,7 +11,11 @@
         <!-- Header -->
         <header class="header">
             <div class="header-content">
-                <h1 class="title">@(ViewBag.Language == "ar" ? "صانع التقارير الذكي" : "Smart Reports Maker")</h1>
+                <h1 class="title">
+                    <span class="app-name-en">Smart Reports Maker</span>
+                    <img src="~/images/logo.svg" alt="Logo" class="app-logo" />
+                    <span class="app-name-ar">صانع التقارير الذكي</span>
+                </h1>
                 <div class="language-toggle">
                     <a href="/Language/Switch?lang=en" class="lang-btn @(ViewBag.Language == "en" ? "active" : "")" title="English">
                         EN
