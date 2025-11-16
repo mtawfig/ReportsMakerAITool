@@ -153,17 +153,22 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    width: 100%;
+    min-width: 0;
 }
 
 .recent-item .nav-link {
     flex: 1;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .recent-subject {
-    flex: 1;
+    display: block;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-size: 0.9rem;
 }
 
 .delete-recent-btn {
@@ -176,6 +181,12 @@ body {
     transition: all 0.2s ease;
     opacity: 0;
     color: #999;
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .recent-item:hover .delete-recent-btn {
