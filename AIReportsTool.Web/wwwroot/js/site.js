@@ -754,44 +754,83 @@ function extractChartData(text) {
 }
 
 // Detect chart type from context keywords
-function detectChartTypeFromContext(text) {
-    const lowerText = text.toLowerCase();
+function detectChartTypeFromContext(localContext, fallbackText = '') {
+    // First try to detect from local context (heading/text near the table)
+    // Then fall back to the full text if nothing found locally
+    const localLower = localContext.toLowerCase();
+    const fallbackLower = fallbackText.toLowerCase();
 
-    if (lowerText.includes('pie chart') || lowerText.includes('pie')) {
+    // Check local context first (prioritize specific table context)
+    if (localLower.includes('pie chart') || localLower.includes('pie')) {
         return 'pie';
-    } else if (lowerText.includes('donut chart') || lowerText.includes('donut')) {
+    } else if (localLower.includes('donut chart') || localLower.includes('donut')) {
         return 'donut';
-    } else if (lowerText.includes('line chart') || lowerText.includes('line graph')) {
+    } else if (localLower.includes('line chart') || localLower.includes('line graph')) {
         return 'line';
-    } else if (lowerText.includes('area chart') || lowerText.includes('area')) {
+    } else if (localLower.includes('area chart') || localLower.includes('area')) {
         return 'area';
-    } else if (lowerText.includes('bar chart') || lowerText.includes('horizontal bar')) {
+    } else if (localLower.includes('bar chart') || localLower.includes('horizontal bar')) {
         return 'bar';
-    } else if (lowerText.includes('column chart') || lowerText.includes('column') || lowerText.includes('bar')) {
+    } else if (localLower.includes('column chart') || localLower.includes('column')) {
         return 'column';
+    }
+
+    // If no specific type found in local context, check fallback text
+    if (fallbackText) {
+        if (fallbackLower.includes('pie chart') || fallbackLower.includes('pie')) {
+            return 'pie';
+        } else if (fallbackLower.includes('donut chart') || fallbackLower.includes('donut')) {
+            return 'donut';
+        } else if (fallbackLower.includes('line chart') || fallbackLower.includes('line graph')) {
+            return 'line';
+        } else if (fallbackLower.includes('area chart') || fallbackLower.includes('area')) {
+            return 'area';
+        } else if (fallbackLower.includes('bar chart') || fallbackLower.includes('horizontal bar')) {
+            return 'bar';
+        } else if (fallbackLower.includes('column chart') || fallbackLower.includes('column') || fallbackLower.includes('bar')) {
+            return 'column';
+        }
     }
 
     // Default to column chart
     return 'column';
 }
 
+// Helper function to get text context before a table (headings, paragraphs)
+function getTableContext(table) {
+    let context = '';
+    let currentElement = table.previousElementSibling;
+    let elementsChecked = 0;
+    const maxElementsToCheck = 3; // Look at up to 3 elements before the table
+
+    while (currentElement && elementsChecked < maxElementsToCheck) {
+        const tagName = currentElement.tagName.toLowerCase();
+
+        // Include headings (h1-h6) and paragraphs
+        if (tagName.match(/^h[1-6]$/) || tagName === 'p') {
+            context = currentElement.textContent + ' ' + context;
+        }
+
+        currentElement = currentElement.previousElementSibling;
+        elementsChecked++;
+    }
+
+    return context.trim();
+}
+
+// Helper function to check if table context indicates it should be a chart
+function shouldTableBeChart(tableContext, userRequest) {
+    const combinedText = (tableContext + ' ' + userRequest).toLowerCase();
+
+    // Check for chart-related keywords
+    const chartKeywords = ['chart', 'graph', 'pie', 'donut', 'bar', 'column', 'line', 'area', 'visualization', 'visualize'];
+
+    return chartKeywords.some(keyword => combinedText.includes(keyword));
+}
+
 // Extract chart data from rendered HTML tables
 function extractChartDataFromTables(containerElement, originalText) {
     console.log('Checking for tables to convert to charts...');
-
-    const lowerText = originalText.toLowerCase();
-
-    // Check if text mentions charts or graphs
-    const hasChartKeyword = lowerText.includes('chart') ||
-                           lowerText.includes('graph') ||
-                           lowerText.includes('pie') ||
-                           lowerText.includes('donut') ||
-                           lowerText.includes('bar') ||
-                           lowerText.includes('column') ||
-                           lowerText.includes('line') ||
-                           lowerText.includes('area');
-
-    console.log('Has chart keyword:', hasChartKeyword);
 
     // Find all tables in the container
     const tables = containerElement.querySelectorAll('table');
@@ -807,6 +846,16 @@ function extractChartDataFromTables(containerElement, originalText) {
 
     tables.forEach((table, tableIndex) => {
         console.log(`Processing table ${tableIndex + 1}/${tables.length}`);
+
+        // Get context around this specific table
+        const tableContext = getTableContext(table);
+        console.log(`Table ${tableIndex + 1} context: "${tableContext}"`);
+
+        // Check if this table should be rendered as a chart
+        if (!shouldTableBeChart(tableContext, originalText)) {
+            console.log(`Table ${tableIndex + 1}: No chart keywords in context, skipping`);
+            return; // Skip this table
+        }
 
         const rows = table.querySelectorAll('tbody tr');
         console.log('Table rows found:', rows.length);
@@ -869,8 +918,8 @@ function extractChartDataFromTables(containerElement, originalText) {
                 title = `${headers[0].textContent.trim()} vs ${headers[1].textContent.trim()}`;
             }
 
-            // Detect chart type - if no keyword, try to render anyway if we have data
-            const chartType = hasChartKeyword ? detectChartTypeFromContext(originalText) : 'column';
+            // Detect chart type based on THIS table's context first, then fall back to full text
+            const chartType = detectChartTypeFromContext(tableContext, originalText);
 
             console.log(`Table ${tableIndex + 1}: Chart data extracted:`, { chartType, labels, values, title });
 
@@ -917,8 +966,8 @@ function extractChartDataFromTables(containerElement, originalText) {
             title = `${headers[0].textContent.trim()} vs ${headers[1].textContent.trim()}`;
         }
 
-        // Detect chart type - if no keyword, try to render anyway if we have data
-        const chartType = hasChartKeyword ? detectChartTypeFromContext(originalText) : 'column';
+        // Detect chart type based on THIS table's context first, then fall back to full text
+        const chartType = detectChartTypeFromContext(tableContext, originalText);
 
         console.log(`Table ${tableIndex + 1}: Chart data extracted:`, { chartType, labels, values, title });
 
