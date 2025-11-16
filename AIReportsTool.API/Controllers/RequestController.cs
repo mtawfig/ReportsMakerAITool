@@ -859,5 +859,83 @@ Please provide your response in the following format:
 
             return results;
         }
+
+        /// <summary>
+        /// DELETE: api/request/{id}
+        /// Deletes a request by ID
+        /// Calls: P_IRT_REPORTHELPERTOOL.SP_DeleteRequest
+        /// </summary>
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteRequest(int id)
+        {
+            if (id <= 0)
+            {
+                return BadRequest(new
+                {
+                    Status = 0,
+                    Message = "Invalid request ID"
+                });
+            }
+
+            try
+            {
+                // Create parameters for stored procedure
+                var requestIdParam = OracleDbService.CreateInputParameter(
+                    "p_request_id",
+                    OracleDbType.Int32,
+                    id
+                );
+
+                var statusParam = OracleDbService.CreateOutputParameter(
+                    "p_status",
+                    OracleDbType.Int32
+                );
+
+                var messageParam = OracleDbService.CreateOutputParameter(
+                    "p_message",
+                    OracleDbType.NVarchar2,
+                    4000
+                );
+
+                // Execute stored procedure to delete request
+                var outParams = await _dbService.ExecuteStoredProcedureWithOutParamsAsync(
+                    "P_IRT_REPORTHELPERTOOL.SP_DeleteRequest",
+                    requestIdParam,
+                    statusParam,
+                    messageParam
+                );
+
+                // Extract output parameters
+                var dbStatus = Convert.ToInt32(outParams["p_status"]);
+                var dbMessage = outParams["p_message"]?.ToString() ?? "Unknown error";
+
+                if (dbStatus == 1)
+                {
+                    return Ok(new
+                    {
+                        Status = 1,
+                        Message = dbMessage
+                    });
+                }
+                else
+                {
+                    return BadRequest(new
+                    {
+                        Status = 0,
+                        Message = dbMessage
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting request {RequestId}", id);
+
+                return StatusCode(500, new
+                {
+                    Status = 0,
+                    Message = "Failed to delete request"
+                });
+            }
+        }
     }
 }

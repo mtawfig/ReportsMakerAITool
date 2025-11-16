@@ -147,6 +147,51 @@ body {
     font-size: 1.2rem;
 }
 
+/* Recent item with delete button */
+.recent-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.recent-item .nav-link {
+    flex: 1;
+}
+
+.recent-subject {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.delete-recent-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    opacity: 0;
+    color: #999;
+}
+
+.recent-item:hover .delete-recent-btn {
+    opacity: 1;
+}
+
+.delete-recent-btn:hover {
+    background: #ffebee;
+    color: #d32f2f;
+    transform: scale(1.1);
+}
+
+.delete-recent-btn:active {
+    transform: scale(0.95);
+}
+
 .loading {
     color: #999;
     font-style: italic;

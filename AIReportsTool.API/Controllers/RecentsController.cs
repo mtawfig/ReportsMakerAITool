@@ -59,6 +59,7 @@ namespace AIReportsTool.API.Controllers
                 {
                     recents.Add(new RecentRequestModel
                     {
+                        RequestId = OracleDbService.GetColumnValue<int>(row, "REQUESTID", 0),
                         DateTime = OracleDbService.GetColumnValue<string>(row, "DATETIME", string.Empty) ?? string.Empty,
                         AppId = OracleDbService.GetColumnValue<int>(row, "APPID", 0),
                         AppNameEn = OracleDbService.GetColumnValue<string>(row, "APPNAMEEN", string.Empty) ?? string.Empty,

@@ -177,18 +177,33 @@ async function loadRecents() {
             listElement.innerHTML = '';
             result.Data.forEach(recent => {
                 const li = document.createElement('li');
+                li.className = 'recent-item';
+
                 const link = document.createElement('a');
                 link.href = '#';
                 link.className = 'nav-link';
                 link.innerHTML = `
                     <span class="nav-icon">${getAppIcon(recent.AppId)}</span>
-                    <span>${recent.Subject}</span>
+                    <span class="recent-subject">${recent.Subject}</span>
                 `;
                 link.addEventListener('click', function (e) {
                     e.preventDefault();
                     loadRecentRequest(recent);
                 });
+
+                // Add delete button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-recent-btn';
+                deleteBtn.innerHTML = '🗑️';
+                deleteBtn.title = window.isArabic ? 'حذف' : 'Delete';
+                deleteBtn.setAttribute('data-request-id', recent.RequestId);
+                deleteBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    confirmDeleteRecent(recent.RequestId, recent.Subject);
+                });
+
                 li.appendChild(link);
+                li.appendChild(deleteBtn);
                 listElement.appendChild(li);
             });
         } else {
@@ -197,6 +212,48 @@ async function loadRecents() {
     } catch (error) {
         console.error('Error loading recents:', error);
         listElement.innerHTML = `<li class="loading">${window.isArabic ? 'خطأ في التحميل' : 'Error loading'}</li>`;
+    }
+}
+
+// Confirm delete recent request
+function confirmDeleteRecent(requestId, subject) {
+    const message = window.isArabic
+        ? `هل أنت متأكد من حذف هذا الطلب؟\n\n"${subject}"`
+        : `Are you sure you want to delete this request?\n\n"${subject}"`;
+
+    if (confirm(message)) {
+        deleteRecentRequest(requestId);
+    }
+}
+
+// Delete recent request
+async function deleteRecentRequest(requestId) {
+    try {
+        const response = await fetch(`/Request/Delete/${requestId}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (result.Status === 1) {
+            showMessage('success', window.isArabic ?
+                'تم حذف الطلب بنجاح' :
+                'Request deleted successfully'
+            );
+            // Reload recents list
+            await loadRecents();
+        } else {
+            showMessage('error', result.Message || (window.isArabic ?
+                'فشل حذف الطلب' :
+                'Failed to delete request'
+            ));
+        }
+    } catch (error) {
+        console.error('Error deleting request:', error);
+        showMessage('error', window.isArabic ?
+            'حدث خطأ أثناء حذف الطلب' :
+            'An error occurred while deleting the request'
+        );
     }
 }
 

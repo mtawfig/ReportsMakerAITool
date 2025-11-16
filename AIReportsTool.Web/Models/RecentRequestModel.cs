@@ -5,6 +5,7 @@ namespace AIReportsTool.Web.Models
     /// </summary>
     public class RecentRequestModel
     {
+        public int RequestId { get; set; }
         public string DateTime { get; set; } = string.Empty;
         public int AppId { get; set; }
         public string AppNameEn { get; set; } = string.Empty;
