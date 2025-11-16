@@ -550,39 +550,84 @@ Database Structure (JSON):
 
 **CRITICAL - INTELLIGENT MATCHING RULES:**
 
-5. **AUTOMATIC Name Variation Detection**: When searching for ANY condition (person, place, department, section, designation, etc.), AUTOMATICALLY include ALL common variations WITHOUT the user having to specify them.
-   - IMPORTANT: try to cover as many common variations as possible for each condition.
+5. **AUTOMATIC Name Variation Detection**: When searching for ANY person's name, AUTOMATICALLY include ALL common spelling variations WITHOUT the user having to specify them.
+   - IMPORTANT: try to cover as many common variations as possible for each name.
    - Examples of automatic variations to include:
      * ""Mostafa"" → MUST include: Mostafa, Mustafa, Moustafa, Mustafah, Mostafah
      * ""Abdalla"" → MUST include: Abdallah, Abdullah, Abd Allah, Abdalla, Abdulla
      * ""Mohamed"" → MUST include: Mohammed, Muhammad, Mohamad, Mohammad
      * ""Ahmed"" → MUST include: Ahmad, Ahmmed, Achmed
      * ""Ali"" → MUST include: Aly, Alee
-     * ""Programming"" → MUST include: Programming, Programing, software Development
    - Use multiple OR conditions with LIKE patterns:
      WHERE UPPER(Name) LIKE '%MOSTAFA%' OR UPPER(Name) LIKE '%MUSTAFA%' OR UPPER(Name) LIKE '%MOUSTAFA%'
    - This applies to ALL name searches, not just when user explicitly asks for variations
 
-6. **Fuzzy/Partial Text Matching**: When the user searches for text values, use LIKE patterns with wildcards (%) for flexible matching, NOT exact equality (=).
-   - Example: If user asks for ""Programming Section"", search for columns LIKE '%Programming%' to match ""Programming & Applications"", ""Programming Section"", etc.
-   - Always use UPPER() or LOWER() functions for case-insensitive searches.
+6. **SEMANTIC/CONTEXTUAL Matching for Departments, Sections, and Designations** (CRITICAL):
+   - When the user asks for a department, section, or designation, you MUST understand the SEMANTIC MEANING and CONTEXT, NOT just literal text matching.
+   - DO NOT use simple LIKE '%text%' patterns that will match unrelated items with similar words.
+   - Instead, analyze the MEANING of what the user is asking for and match items with SIMILAR CONTEXTUAL MEANING.
 
-7. **Semantic Understanding**: Interpret user intent, not just literal column names. As examples:
+   **EXAMPLES OF CORRECT SEMANTIC MATCHING:**
+
+   Example 1: User asks for ""Programming and applications Section""
+   ✅ SHOULD MATCH (semantically related to software/programming):
+     * ""Programming Section""
+     * ""Programming and Applications""
+     * ""Software Development Section""
+     * ""Software Engineering Section""
+     * ""Application Development""
+     * ""IT Development""
+     * ""Systems Development""
+
+   ❌ SHOULD NOT MATCH (different context despite containing similar words):
+     * ""Safety Programs Section"" (safety context, not programming context)
+     * ""Quality Programs"" (quality context, not programming context)
+     * ""Training Programs"" (training context, not programming context)
+     * ""Application Forms Department"" (forms/paperwork context, not software context)
+
+   Example 2: User asks for ""Quality Section""
+   ✅ SHOULD MATCH:
+     * ""Quality Control""
+     * ""Quality Assurance""
+     * ""QC Department""
+     * ""Quality Management""
+
+   ❌ SHOULD NOT MATCH:
+     * ""Quality Programs"" in IT context (unless it's about quality control)
+
+   **IMPLEMENTATION APPROACH:**
+   - First, identify the SEMANTIC DOMAIN of the user's request (e.g., IT/Software, Safety, Quality, HR, Finance, etc.)
+   - Then match ONLY items that belong to the SAME SEMANTIC DOMAIN
+   - Use explicit OR conditions listing semantically related terms, NOT broad LIKE '%text%' patterns
+   - Example SQL for ""Programming Section"":
+     WHERE UPPER(SectionName) IN ('PROGRAMMING', 'PROGRAMMING SECTION', 'PROGRAMMING AND APPLICATIONS')
+        OR UPPER(SectionName) LIKE '%SOFTWARE DEVELOPMENT%'
+        OR UPPER(SectionName) LIKE '%SOFTWARE ENGINEERING%'
+        OR UPPER(SectionName) LIKE '%APPLICATION DEVELOPMENT%'
+        OR UPPER(SectionName) LIKE '%IT DEVELOPMENT%'
+        OR UPPER(SectionName) LIKE '%SYSTEMS DEVELOPMENT%'
+   - AVOID patterns like: WHERE UPPER(SectionName) LIKE '%PROGRAM%' (too broad, will match unrelated items)
+
+7. **Fuzzy/Partial Text Matching for Free Text Fields**: When the user searches for descriptive text or comments, use LIKE patterns with wildcards (%) for flexible matching.
+   - Always use UPPER() or LOWER() functions for case-insensitive searches.
+   - This applies to free-text fields like descriptions, comments, notes, etc.
+
+8. **Semantic Understanding for Calculated Fields**: Interpret user intent, not just literal column names. As examples:
    - If user asks for ""age > 40"" but there's no AGE column, look for DOB, BirthDate, DateOfBirth, or similar date columns, then Calculate age using appropriate date functions for {dbProvider}:
      * Oracle: FLOOR((SYSDATE - DOB) / 365.25)
      * SQL Server: DATEDIFF(year, BirthDate, GETDATE())
      * MySQL: TIMESTAMPDIFF(YEAR, DateOfBirth, CURDATE())
 
-8. **Flexible Column Matching**: Match column names intelligently, not just exactly.
+9. **Flexible Column Matching**: Match column names intelligently, not just exactly.
    - ""employee code"" could be: EmpCode, EmployeeCode, EMP_CODE, EMPLOYEE_ID, etc.
    - ""name"" could be: Name, EmpName, EmployeeName, FullName, FIRST_NAME + LAST_NAME, etc.
    - Look for similar or related columns in the database structure.
 
-9. **Case-Insensitive Searches**: ALWAYS use UPPER() or LOWER() functions for text comparisons to ensure case-insensitive matching.
+10. **Case-Insensitive Searches**: ALWAYS use UPPER() or LOWER() functions for text comparisons to ensure case-insensitive matching.
 
-10. **Smart Sorting**: If user mentions ""ascending"" or ""descending"", apply ORDER BY with ASC or DESC respectively.
+11. **Smart Sorting**: If user mentions ""ascending"" or ""descending"", apply ORDER BY with ASC or DESC respectively.
 
-11. Include appropriate JOINs if multiple tables are needed based on foreign key relationships in the structure.
+12. Include appropriate JOINs if multiple tables are needed based on foreign key relationships in the structure.
 
 **Response Format:**
 Please provide your response in the following format:
@@ -605,7 +650,8 @@ Please provide your response in the following format:
 - Use proper SQL formatting with appropriate indentation
 - Only use tables and columns that exist in the provided database structure
 - ALWAYS apply intelligent, flexible matching as described above - never use exact equality for text searches
-- CRITICAL: ALWAYS automatically include name variations even if user doesn't ask for them - this is MANDATORY for all name searches";
+- CRITICAL: ALWAYS automatically include name variations even if user doesn't ask for them - this is MANDATORY for all name searches
+- CRITICAL: For departments/sections/designations, you MUST use SEMANTIC/CONTEXTUAL matching - understand the MEANING and match only items in the same semantic domain. DO NOT use broad LIKE patterns that will match unrelated items with similar words";
 
             return prompt;
         }
