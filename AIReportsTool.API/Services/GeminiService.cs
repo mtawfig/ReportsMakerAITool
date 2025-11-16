@@ -240,5 +240,43 @@ Please provide a detailed, well-formatted response that addresses this request. 
 
             return await GenerateContentAsync(prompt);
         }
+
+        /// <summary>
+        /// Generates a report based on the user's request and provided data from database query results
+        /// </summary>
+        /// <param name="appName">Application name</param>
+        /// <param name="subject">Request subject</param>
+        /// <param name="requestText">Detailed request text containing user's instructions</param>
+        /// <param name="queryData">JSON data containing the results from the executed SQL query</param>
+        /// <returns>Generated report response based on the provided data</returns>
+        public async Task<string> GenerateReportWithDataAsync(string appName, string subject, string requestText, string queryData)
+        {
+            // Construct a comprehensive prompt for Gemini that instructs it to use the provided data
+            var prompt = $@"You are an AI assistant helping with the '{appName}' application.
+
+Subject: {subject}
+
+User's Request:
+{requestText}
+
+Database Query Results (JSON format):
+{queryData}
+
+IMPORTANT INSTRUCTIONS:
+- Generate the report based ENTIRELY on the data provided above in the 'Database Query Results' section
+- Use the user's request to understand what type of report to create, what summary to include, and what table fields to display
+- Format the response as a well-structured report with:
+  * A clear summary section that analyzes the data
+  * A properly formatted table displaying the relevant fields from the data
+  * Any insights, trends, or key findings based on the actual data provided
+- Use Markdown formatting for better presentation
+- Include the table with proper headers and all relevant data rows
+- DO NOT make up or assume any data that is not present in the query results
+- If the user requested specific calculations or aggregations, perform them based on the provided data
+
+Please provide a detailed, well-formatted report that addresses the user's request using the provided data.";
+
+            return await GenerateContentAsync(prompt);
+        }
     }
 }

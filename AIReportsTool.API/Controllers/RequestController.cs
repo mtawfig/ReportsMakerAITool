@@ -401,16 +401,41 @@ namespace AIReportsTool.API.Controllers
                 // Convert DataTable to JSON-friendly format
                 var resultData = ConvertDataTableToJson(queryResults);
 
+                // Convert the result data to JSON string for Gemini
+                var resultDataJson = JsonSerializer.Serialize(resultData, new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+                // Call Gemini to generate a report based on the data
+                _logger.LogInformation("Calling Gemini API to generate report with data for AppId: {AppId}", payload.AppId);
+                string reportResponse;
+
+                try
+                {
+                    reportResponse = await _geminiService.GenerateReportWithDataAsync(
+                        "IntellegentReportMaker",
+                        payload.Subject,
+                        payload.RequestText,
+                        resultDataJson
+                    );
+                }
+                catch (Exception geminiEx)
+                {
+                    _logger.LogError(geminiEx, "Gemini API call failed for report generation with data");
+                    return Ok(new RequestResponseModel
+                    {
+                        Status = 0,
+                        Message = "Error generating report with data",
+                        ResponseText = geminiEx.Message
+                    });
+                }
+
                 var response = new RequestResponseModel
                 {
                     Status = 1,
-                    Message = "Query executed successfully",
-                    ResponseText = JsonSerializer.Serialize(new
-                    {
-                        SqlQuery = sqlQuery,
-                        Summary = ExtractSummaryFromResponse(geminiResponse),
-                        Results = resultData
-                    })
+                    Message = "Report generated successfully",
+                    ResponseText = reportResponse
                 };
 
                 //insert the request with response into database for logging and recent requests
