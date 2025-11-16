@@ -89,7 +89,7 @@ body {
 
 .lang-btn.active {
     background: white;
-    color: #667eea;
+    color: #CD2122;
     border-color: white;
 }
 
@@ -161,8 +161,8 @@ body {
 }
 
 .nav-link.active {
-    background: #e3e8ff;
-    color: #667eea;
+    background: #ffe5e7;
+    color: #CD2122;
     font-weight: 500;
 }
 
@@ -297,8 +297,8 @@ body {
 
 .form-control:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #CD2122;
+    box-shadow: 0 0 0 3px rgba(205, 33, 34, 0.1);
 }
 
 textarea.form-control {
@@ -334,13 +334,13 @@ textarea.form-control {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #E63946 0%, #A4161A 100%);
     color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 12px rgba(205, 33, 34, 0.4);
 }
 
 .btn-primary:disabled {
@@ -363,13 +363,13 @@ textarea.form-control {
 }
 
 .btn-info {
-    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    background: linear-gradient(135deg, #E85D67 0%, #C42A33 100%);
     color: white;
 }
 
 .btn-info:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(23, 162, 184, 0.4);
+    box-shadow: 0 4px 12px rgba(205, 33, 34, 0.4);
 }
 
 .btn-info:disabled {
@@ -443,13 +443,13 @@ textarea.form-control {
     margin-top: 2rem;
     padding: 1.5rem;
     background: #f8f9fa;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid #CD2122;
     border-radius: 6px;
 }
 
 [dir="rtl"] .response-container {
     border-left: none;
-    border-right: 4px solid #667eea;
+    border-right: 4px solid #CD2122;
 }
 
 .response-title {
@@ -573,7 +573,7 @@ textarea.form-control {
 }
 
 .response-text thead {
-    background-color: #667eea;
+    background-color: #CD2122;
     color: white;
 }
 
@@ -598,7 +598,7 @@ textarea.form-control {
 }
 
 .response-text blockquote {
-    border-left: 4px solid #667eea;
+    border-left: 4px solid #CD2122;
     margin: 1rem 0;
     padding: 0.5rem 1rem;
     background-color: #f9fafb;
@@ -607,7 +607,7 @@ textarea.form-control {
 
 [dir="rtl"] .response-text blockquote {
     border-left: none;
-    border-right: 4px solid #667eea;
+    border-right: 4px solid #CD2122;
 }
 
 .response-text hr {
@@ -617,13 +617,13 @@ textarea.form-control {
 }
 
 .response-text a {
-    color: #667eea;
+    color: #CD2122;
     text-decoration: none;
     transition: color 0.2s;
 }
 
 .response-text a:hover {
-    color: #5568d3;
+    color: #A4161A;
     text-decoration: underline;
 }
 
@@ -801,7 +801,7 @@ textarea.form-control {
 .hero-section {
     text-align: center;
     padding: 3rem 2rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #E63946 0%, #A4161A 100%);
     color: white;
     border-radius: 12px;
     margin-bottom: 3rem;
@@ -844,7 +844,7 @@ textarea.form-control {
 
 .feature-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 4px 16px rgba(205, 33, 34, 0.2);
 }
 
 .feature-icon {
@@ -899,19 +899,19 @@ textarea.form-control {
     padding: 1.5rem;
     background: #f8f9fa;
     border-radius: 12px;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid #CD2122;
 }
 
 [dir="rtl"] .step-card {
     border-left: none;
-    border-right: 4px solid #667eea;
+    border-right: 4px solid #CD2122;
 }
 
 .step-number {
     flex-shrink: 0;
     width: 50px;
     height: 50px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #E63946 0%, #A4161A 100%);
     color: white;
     border-radius: 50%;
     display: flex;
@@ -945,7 +945,7 @@ textarea.form-control {
 
 /* Tips Section */
 .tips-section {
-    background: #e3e8ff;
+    background: #ffe5e7;
     padding: 2rem;
     border-radius: 12px;
     margin-bottom: 2rem;
@@ -981,14 +981,14 @@ textarea.form-control {
 }
 
 .tip-bullet {
-    color: #667eea;
+    color: #CD2122;
     font-weight: 700;
     font-size: 1.25rem;
 }
 
 /* CTA Section */
 .cta-section {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #E63946 0%, #A4161A 100%);
     color: white;
     padding: 3rem;
     border-radius: 12px;
@@ -1064,7 +1064,7 @@ textarea.form-control {
     background: #f8f9fa;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
-    color: #667eea;
+    color: #CD2122;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -1072,8 +1072,8 @@ textarea.form-control {
 }
 
 .back-btn:hover {
-    background: #e3e8ff;
-    border-color: #667eea;
+    background: #ffe5e7;
+    border-color: #CD2122;
 }
 
 .back-icon {
@@ -1086,7 +1086,7 @@ textarea.form-control {
     align-items: center;
     gap: 1.5rem;
     /*padding: 1.25rem 2rem;*/
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #E63946 0%, #A4161A 100%);
     color: white;
     border-radius: 12px 12px 0 0;
     /*margin-bottom: 2rem;*/
@@ -1231,8 +1231,8 @@ textarea.form-control {
 .loading-spinner {
     width: 60px;
     height: 60px;
-    border: 5px solid #e3e8ff;
-    border-top: 5px solid #667eea;
+    border: 5px solid #ffe5e7;
+    border-top: 5px solid #CD2122;
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -1270,14 +1270,14 @@ textarea.form-control {
     margin-bottom: 2rem;
     padding: 1.5rem;
     background: #f8f9fa;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid #CD2122;
     border-radius: 8px;
 }
 
 .query-summary h3 {
     margin-top: 0;
     margin-bottom: 1rem;
-    color: #667eea;
+    color: #CD2122;
     font-size: 1.25rem;
     font-weight: 600;
 }
@@ -1325,7 +1325,7 @@ textarea.form-control {
 }
 
 .results-table thead {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #E63946 0%, #A4161A 100%);
     color: white;
 }
 
@@ -1336,7 +1336,7 @@ textarea.form-control {
     font-size: 0.9rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    border-bottom: 2px solid #5a67d8;
+    border-bottom: 2px solid #A4161A;
 }
 
 .results-table tbody tr {
