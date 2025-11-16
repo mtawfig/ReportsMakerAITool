@@ -567,17 +567,41 @@ Database Structure (JSON):
    - DO NOT use simple LIKE '%text%' patterns that will match unrelated items with similar words.
    - Instead, analyze the MEANING of what the user is asking for and match items with SIMILAR CONTEXTUAL MEANING.
 
+   **STEP 1: NORMALIZE SPECIAL CHARACTERS IN USER INPUT**
+   When the user provides a section/department/designation name, automatically handle character variations:
+   - ""&"" (ampersand) ↔ ""and"" (spelled out)
+   - ""-"" (hyphen/dash) ↔ "" "" (space) ↔ """" (no separator)
+   - ""/"" (slash) ↔ ""and"" ↔ "" "" (space)
+
+   Examples of equivalent searches:
+   - ""Programming & Applications"" = ""Programming and Applications"" = ""Programming Applications""
+   - ""Quality-Control"" = ""Quality Control"" = ""QualityControl""
+   - ""HR/Admin"" = ""HR and Admin"" = ""HR Admin""
+
+   **STEP 2: CHECK DATABASE FOR EXACT OR CLOSE MATCHES FIRST**
+   - FIRST, look at the actual section/department/designation values in the database structure JSON
+   - If you find an EXACT match (accounting for character variations from Step 1), use that specific value
+   - If you find a CLOSE match (same key words but slightly different), include both the exact database value AND semantic variations
+
+   Example: If user asks for ""Programming Section"" and database has ""Programming & Applications Section"":
+   - ✅ CORRECT: Match ""Programming & Applications Section"" specifically
+   - ❌ WRONG: Return 0 rows because of exact match on ""Programming Section""
+   - ❌ WRONG: Return all employees by using too broad a pattern
+
+   **STEP 3: ADD SEMANTIC VARIATIONS ONLY WITHIN THE SAME DOMAIN**
+   After finding close matches in the database, add semantically related variations ONLY if they make sense:
+
    **EXAMPLES OF CORRECT SEMANTIC MATCHING:**
 
    Example 1: User asks for ""Programming and applications Section""
    ✅ SHOULD MATCH (semantically related to software/programming):
-     * ""Programming Section""
-     * ""Programming and Applications""
-     * ""Software Development Section""
-     * ""Software Engineering Section""
-     * ""Application Development""
-     * ""IT Development""
-     * ""Systems Development""
+     * ""Programming & Applications"" (character variation - MUST MATCH)
+     * ""Programming and Applications"" (character variation - MUST MATCH)
+     * ""Programming Section"" (partial match of same section)
+     * ""Software Development Section"" (same semantic domain)
+     * ""Software Engineering Section"" (same semantic domain)
+     * ""Application Development"" (same semantic domain)
+     * ""IT Development"" (same semantic domain)
 
    ❌ SHOULD NOT MATCH (different context despite containing similar words):
      * ""Safety Programs Section"" (safety context, not programming context)
@@ -593,20 +617,41 @@ Database Structure (JSON):
      * ""Quality Management""
 
    ❌ SHOULD NOT MATCH:
-     * ""Quality Programs"" in IT context (unless it's about quality control)
+     * Unrelated sections with word ""quality""
 
    **IMPLEMENTATION APPROACH:**
-   - First, identify the SEMANTIC DOMAIN of the user's request (e.g., IT/Software, Safety, Quality, HR, Finance, etc.)
-   - Then match ONLY items that belong to the SAME SEMANTIC DOMAIN
-   - Use explicit OR conditions listing semantically related terms, NOT broad LIKE '%text%' patterns
-   - Example SQL for ""Programming Section"":
-     WHERE UPPER(SectionName) IN ('PROGRAMMING', 'PROGRAMMING SECTION', 'PROGRAMMING AND APPLICATIONS')
-        OR UPPER(SectionName) LIKE '%SOFTWARE DEVELOPMENT%'
-        OR UPPER(SectionName) LIKE '%SOFTWARE ENGINEERING%'
-        OR UPPER(SectionName) LIKE '%APPLICATION DEVELOPMENT%'
-        OR UPPER(SectionName) LIKE '%IT DEVELOPMENT%'
-        OR UPPER(SectionName) LIKE '%SYSTEMS DEVELOPMENT%'
-   - AVOID patterns like: WHERE UPPER(SectionName) LIKE '%PROGRAM%' (too broad, will match unrelated items)
+
+   Step-by-step process:
+   1. Parse the user's search term (e.g., ""Programming Section"")
+   2. Generate character variations: ""Programming & Section"", ""Programming and Section"", ""Programming-Section""
+   3. Look at database structure to find sections/departments containing these key words
+   4. If you find actual database values, build your WHERE clause to match those FIRST
+   5. Then add semantically related terms in the SAME domain
+
+   Example SQL for ""Programming Section"":
+   ```sql
+   WHERE
+     -- Exact match with character variations (if these exist in DB)
+     UPPER(SectionName) IN (
+       'PROGRAMMING SECTION',
+       'PROGRAMMING & APPLICATIONS',
+       'PROGRAMMING AND APPLICATIONS',
+       'PROGRAMMING-APPLICATIONS'
+     )
+     -- Close partial matches containing key words
+     OR UPPER(SectionName) LIKE '%PROGRAMMING%APPLICATION%'
+     OR UPPER(SectionName) LIKE '%APPLICATION%PROGRAMMING%'
+     -- Semantic variations (same domain only)
+     OR UPPER(SectionName) LIKE '%SOFTWARE DEVELOPMENT%'
+     OR UPPER(SectionName) LIKE '%SOFTWARE ENGINEERING%'
+   ```
+
+   **CRITICAL RULES:**
+   - NEVER use overly broad patterns like `LIKE '%PROGRAM%'` (will match ""Training Programs"", etc.)
+   - ALWAYS check database structure first to see what sections actually exist
+   - ALWAYS handle ""&"" ↔ ""and"" character variations
+   - When user says ""Programming Section"", it should match ""Programming & Applications Section"" if that exists in the database
+   - Build WHERE clauses that are specific enough to avoid false matches but flexible enough to handle variations
 
 7. **Fuzzy/Partial Text Matching for Free Text Fields**: When the user searches for descriptive text or comments, use LIKE patterns with wildcards (%) for flexible matching.
    - Always use UPPER() or LOWER() functions for case-insensitive searches.
