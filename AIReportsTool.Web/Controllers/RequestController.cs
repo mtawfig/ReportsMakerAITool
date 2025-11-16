@@ -102,6 +102,12 @@ namespace AIReportsTool.Web.Controllers
                     });
                 }
 
+                // Get PC username from environment
+                if (string.IsNullOrWhiteSpace(payload.Username))
+                {
+                    payload.Username = Environment.UserName;
+                }
+
                 var apiBaseUrl = _configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5100";
                 var client = _httpClientFactory.CreateClient();
 
@@ -137,6 +143,58 @@ namespace AIReportsTool.Web.Controllers
                     Status = 0,
                     Message = $"Error: {ex.Message}",
                     ResponseText = string.Empty
+                });
+            }
+        }
+
+        /// <summary>
+        /// DELETE: /Request/Delete/{id}
+        /// Deletes a request by ID
+        /// </summary>
+        [HttpDelete("Delete/{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                if (id <= 0)
+                {
+                    return Json(new
+                    {
+                        Status = 0,
+                        Message = "Invalid request ID"
+                    });
+                }
+
+                var apiBaseUrl = _configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5100";
+                var client = _httpClientFactory.CreateClient();
+
+                var response = await client.DeleteAsync($"{apiBaseUrl}/api/Request/{id}");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    var apiResponse = JsonSerializer.Deserialize<JsonElement>(content, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
+                    return Json(apiResponse);
+                }
+                else
+                {
+                    return Json(new
+                    {
+                        Status = 0,
+                        Message = "Failed to delete request"
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    Status = 0,
+                    Message = $"Error: {ex.Message}"
                 });
             }
         }
