@@ -116,9 +116,9 @@ Submits a new report generation request.
 
 ## 🎨 UI Features
 
-- Responsive modern sidebar
+- Responsive modern design with top navbar, sidebar, and content
 - Clean form design
-- Dropdown share menu
+- Dropdown save file and print menu
 - Success/error notifications
 - Smooth animations
 - Full RTL support for Arabic
