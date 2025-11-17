@@ -1049,7 +1049,7 @@ Please provide your response in the following format:
                 return StatusCode(500, new
                 {
                     Status = 0,
-                    Message = "Failed to delete request"
+                    Message = $"Failed to delete request: {ex.Message}"
                 });
             }
         }
