@@ -116,8 +116,7 @@ Submits a new report generation request.
 
 ## 🎨 UI Features
 
-- Modern gradient header with purple theme
-- Responsive sidebar
+- Responsive modern sidebar
 - Clean form design
 - Dropdown share menu
 - Success/error notifications
@@ -135,7 +134,6 @@ Submits a new report generation request.
 
 ## 🛠️ Development Notes
 
-- All data is currently hardcoded (no database)
 - API uses minimal hosting model
 - MVC uses conventional routing
 - Static files served from wwwroot
@@ -143,4 +141,4 @@ Submits a new report generation request.
 
 ## 👨‍💻 Author
 
-Created as a full-stack ASP.NET Core 9 demonstration project.
+Created by Mostafa Wahbi as a full-stack ASP.NET Core 9 project.
