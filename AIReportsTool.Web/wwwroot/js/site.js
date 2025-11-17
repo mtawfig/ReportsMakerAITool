@@ -30,6 +30,15 @@ function setupHomeLink() {
             showLandingPage();
         });
     });
+
+    // Setup breadcrumb home link
+    const breadcrumbHome = document.getElementById('breadcrumb-home');
+    if (breadcrumbHome) {
+        breadcrumbHome.addEventListener('click', function(e) {
+            e.preventDefault();
+            showLandingPage();
+        });
+    }
 }
 
 // Show landing page
@@ -43,6 +52,12 @@ function showLandingPage() {
 
         // Clear form
         clearForm();
+
+        // Hide breadcrumb
+        const breadcrumbNav = document.getElementById('selected-app-header');
+        if (breadcrumbNav) {
+            breadcrumbNav.classList.add('hide');
+        }
 
         // Remove active class from all sidebar links
         const allLinks = document.querySelectorAll('.nav-link');
@@ -276,6 +291,12 @@ function selectApplication(app) {
         appIconElement.textContent = getAppIcon(app.AppId);
     }
 
+    // Show breadcrumb
+    const breadcrumbNav = document.getElementById('selected-app-header');
+    if (breadcrumbNav) {
+        breadcrumbNav.classList.remove('hide');
+    }
+
     // Highlight selected app
     const allLinks = document.querySelectorAll('#applications-list .nav-link');
     allLinks.forEach(link => link.classList.remove('active'));
@@ -302,6 +323,12 @@ function loadRecentRequest(recent) {
     }
     if (appIconElement) {
         appIconElement.textContent = getAppIcon(recent.AppId);
+    }
+
+    // Show breadcrumb
+    const breadcrumbNav = document.getElementById('selected-app-header');
+    if (breadcrumbNav) {
+        breadcrumbNav.classList.remove('hide');
     }
 
     // Fill form fields
