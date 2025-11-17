@@ -1,4 +1,4 @@
-# AI Reports Tool - ASP.NET Core 9 Solution
+# AI-Powered Reports Assistant Tool - ASP.NET Core 9 Solution
 
 A complete full-stack application built with ASP.NET Core 9, featuring an MVC web application and a RESTful Web API.
 
