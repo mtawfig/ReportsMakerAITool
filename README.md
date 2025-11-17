@@ -1,4 +1,4 @@
-# AI Reports Tool - ASP.NET Core 9 Solution
+# AI-Powered Reports Assistant Tool - ASP.NET Core 9 Solution
 
 A complete full-stack application built with ASP.NET Core 9, featuring an MVC web application and a RESTful Web API.
 
@@ -6,7 +6,7 @@ A complete full-stack application built with ASP.NET Core 9, featuring an MVC we
 
 This solution demonstrates a modern AI-powered reports tool with:
 - **MVC Web Application** (AIReportsTool.Web) - User interface for report generation
-- **Web API** (AIReportsTool.API) - Backend API with hardcoded data responses
+- **Web API** (AIReportsTool.API) - Backend API with real data responses from a development database 
 
 ## 🏗️ Solution Structure
 
@@ -15,8 +15,8 @@ AIReportsTool/
 ├── AIReportsTool.sln                 # Solution file
 ├── AIReportsTool.API/                # Web API Project
 │   ├── Controllers/                  # API Controllers
-│   │   ├── AppsController.cs        # Returns 5 applications
-│   │   ├── RecentsController.cs     # Returns 10 recent requests
+│   │   ├── AppsController.cs        # Returns applications
+│   │   ├── RecentsController.cs     # Returns last 10 recent requests
 │   │   └── RequestController.cs     # Handles report requests
 │   ├── Models/                       # Data models
 │   ├── Program.cs                    # API entry point
@@ -44,8 +44,8 @@ AIReportsTool/
 - **Share Functionality**: Email, Download, Print
 
 ### Web API
-- **GET /api/apps**: Returns 5 hardcoded applications
-- **GET /api/recents**: Returns 10 recent requests
+- **GET /api/apps**: Return applications from database granted to current user
+- **GET /api/recents**: Returns 10 recent requests of current user
 - **POST /api/request**: Accepts and processes report requests
 
 ## 🔧 Configuration
@@ -116,10 +116,9 @@ Submits a new report generation request.
 
 ## 🎨 UI Features
 
-- Modern gradient header with purple theme
-- Responsive sidebar
+- Responsive modern design with top navbar, sidebar, and content
 - Clean form design
-- Dropdown share menu
+- Dropdown save file and print menu
 - Success/error notifications
 - Smooth animations
 - Full RTL support for Arabic
@@ -135,7 +134,6 @@ Submits a new report generation request.
 
 ## 🛠️ Development Notes
 
-- All data is currently hardcoded (no database)
 - API uses minimal hosting model
 - MVC uses conventional routing
 - Static files served from wwwroot
@@ -143,4 +141,4 @@ Submits a new report generation request.
 
 ## 👨‍💻 Author
 
-Created as a full-stack ASP.NET Core 9 demonstration project.
+Created by Mostafa Wahbi as a full-stack ASP.NET Core 9 project.
