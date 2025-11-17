@@ -22,12 +22,13 @@ A simple, modern one‑page interface featuring:
 
 ### Workflow Summary
 
-User enters a request →  
-System understands the meaning →  
-AI generates the correct SQL →  
-System retrieves data from Oracle, SQL Server, or MySQL →  
-AI produces the final business‑ready output →  
-User receives immediate insights.
+- User enters a request →  
+- System understands the meaning →  
+- AI generates the correct SQL →  
+- System retrieves data from Oracle, SQL Server, or MySQL →  
+- AI produces the final business‑ready output →  
+- User receives immediate insights on the page in the format they requested.
+- User can print and download the output as file (Word and PDF).
 
 ---
 
@@ -125,12 +126,12 @@ User Results
 ### Medium‑Term
 - On‑premise AI hosting  
 - Data masking and privacy controls  
-- Advanced monitoring capabilities  
+- Advanced monitoring capabilities
+- Workers for scheduled reports wich sent to email
 
 ### Long‑Term
 - BI tool integration  
-- Enterprise analytics automation  
-- Cross‑department AI assistant marketplace  
+- Enterprise analytics automation 
 
 ---
 
@@ -144,10 +145,10 @@ This platform is a strategic step forward toward building a smarter, faster, and
 
 ## Suggestions
 
-- Introduce paid AI tiers for improved accuracy  
-- Add SQL safety layers and validation rules  
-- Implement response caching to reduce costs  
+- Add SQL more database engines support to cover all SAA applications.
+- Implement response caching to reduce costs.
 - Expand AI model options to avoid vendor lock‑in  
 - Plan ahead for an on‑premise secure AI cluster
+- Plan ahead for on-premise LLM
 
 ---
