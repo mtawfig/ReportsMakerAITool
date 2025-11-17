@@ -130,13 +130,22 @@
 
     <!-- Request Form - Hidden by default, shown when app/recent selected -->
     <div id="request-form-section" class="request-form-section" style="display: none;">
-        <!-- Selected App Header -->
-        <div id="selected-app-header" class="selected-app-header hide">
-            <div class="selected-app-icon" id="selected-app-icon">📱</div>
-            <div class="selected-app-info">
-                <h2 class="selected-app-name" id="selected-app-display-name">@(isArabic ? "التطبيق المحدد" : "Selected Application")</h2>
-            </div>
-        </div>
+        <!-- Breadcrumb Navigation -->
+        <nav id="selected-app-header" class="breadcrumb-nav hide" aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="#" class="breadcrumb-link" id="breadcrumb-home">
+                        <span class="breadcrumb-icon">🏠</span>
+                        <span>@(isArabic ? "الرئيسية" : "Home")</span>
+                    </a>
+                </li>
+                <li class="breadcrumb-separator" aria-hidden="true">/</li>
+                <li class="breadcrumb-item active" aria-current="page">
+                    <span class="breadcrumb-icon" id="selected-app-icon">📱</span>
+                    <span class="breadcrumb-text" id="selected-app-display-name">@(isArabic ? "التطبيق المحدد" : "Selected Application")</span>
+                </li>
+            </ol>
+        </nav>
 
         <div class="request-form">
             <input type="hidden" id="selected-appid" value="" />
