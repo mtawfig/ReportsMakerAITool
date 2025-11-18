@@ -371,5 +371,247 @@ Please generate the complete email now:";
 
             return await GenerateContentAsync(prompt);
         }
+
+        /// <summary>
+        /// Generates only a table based on the user's request
+        /// </summary>
+        /// <param name="appName">Application name</param>
+        /// <param name="subject">Request subject</param>
+        /// <param name="requestText">Detailed request text</param>
+        /// <returns>Generated table response</returns>
+        public async Task<string> GenerateTableAsync(string appName, string subject, string requestText)
+        {
+            // Construct a table-specific prompt for Gemini
+            var prompt = $@"You are an AI assistant helping with the '{appName}' application.
+
+Subject: {subject}
+
+Request:
+{requestText}
+
+IMPORTANT INSTRUCTIONS:
+- Generate ONLY a table that addresses this request
+- DO NOT include any introductory text, explanations, summaries, or analysis
+- DO NOT include any concluding remarks or additional information
+- The response should be ONLY the table in Markdown format
+- Include proper table headers
+- Ensure the table is well-formatted and easy to read
+- DO NOT include any code snippets, JSON, or programming language syntax
+- Start your response directly with the table (using Markdown table syntax)
+
+Please provide only the table now:";
+
+            return await GenerateContentAsync(prompt);
+        }
+
+        /// <summary>
+        /// Generates only a table based on the user's request and provided data from database query results
+        /// </summary>
+        /// <param name="appName">Application name</param>
+        /// <param name="subject">Request subject</param>
+        /// <param name="requestText">Detailed request text containing user's instructions</param>
+        /// <param name="queryData">JSON data containing the results from the executed SQL query</param>
+        /// <returns>Generated table response based on the provided data</returns>
+        public async Task<string> GenerateTableWithDataAsync(string appName, string subject, string requestText, string queryData)
+        {
+            // Construct a table-specific prompt for Gemini that instructs it to use the provided data
+            var prompt = $@"You are an AI assistant helping with the '{appName}' application.
+
+Subject: {subject}
+
+User's Request:
+{requestText}
+
+Database Query Results (JSON format):
+{queryData}
+
+IMPORTANT INSTRUCTIONS:
+- Generate ONLY a table based ENTIRELY on the data provided above in the 'Database Query Results' section
+- DO NOT include any introductory text, explanations, summaries, or analysis
+- DO NOT include any concluding remarks or additional information
+- The response should be ONLY the table in Markdown format
+- Use the user's request to understand what table fields to display and how to organize the data
+- Include proper table headers
+- Ensure the table is well-formatted with all relevant data rows
+- DO NOT make up or assume any data that is not present in the query results
+- DO NOT include any code snippets, JSON, or programming language syntax
+- Start your response directly with the table (using Markdown table syntax)
+
+Please provide only the table now:";
+
+            return await GenerateContentAsync(prompt);
+        }
+
+        /// <summary>
+        /// Generates only chart(s) based on the user's request
+        /// </summary>
+        /// <param name="appName">Application name</param>
+        /// <param name="subject">Request subject</param>
+        /// <param name="requestText">Detailed request text</param>
+        /// <returns>Generated chart response (table format for chart data)</returns>
+        public async Task<string> GenerateChartAsync(string appName, string subject, string requestText)
+        {
+            // Construct a chart-specific prompt for Gemini
+            var prompt = $@"You are an AI assistant helping with the '{appName}' application.
+
+Subject: {subject}
+
+Request:
+{requestText}
+
+IMPORTANT INSTRUCTIONS:
+- Generate ONLY the data table(s) needed for the requested chart(s)
+- DO NOT include any introductory text, explanations, summaries, or analysis
+- DO NOT include any concluding remarks or additional information
+- DO NOT include any textual description of what the chart would display
+- The chart(s) will be rendered by the application itself automatically
+- If the user requested MULTIPLE charts (e.g., 2 pie charts, a bar chart and a line chart):
+  * Create a SEPARATE table for EACH chart
+  * Each table should contain ONLY the data for that specific chart
+  * Add a clear heading above each table indicating what chart it represents (e.g., '### Pie Chart: Sales by Region', '### Bar Chart: Revenue by Month')
+  * Each table should have exactly 2 columns: the category/label column and the value column
+  * DO NOT combine multiple charts' data into one table
+- If only one chart was requested, provide one table with the chart data
+- Use Markdown table format for the data
+- Ensure each table has proper headers
+- DO NOT include any code snippets, JSON, or programming language syntax
+- Start your response directly with the table(s) (using Markdown table syntax with optional headings)
+
+Please provide only the chart data table(s) now:";
+
+            return await GenerateContentAsync(prompt);
+        }
+
+        /// <summary>
+        /// Generates only chart(s) based on the user's request and provided data from database query results
+        /// </summary>
+        /// <param name="appName">Application name</param>
+        /// <param name="subject">Request subject</param>
+        /// <param name="requestText">Detailed request text containing user's instructions</param>
+        /// <param name="queryData">JSON data containing the results from the executed SQL query</param>
+        /// <returns>Generated chart response (table format for chart data) based on the provided data</returns>
+        public async Task<string> GenerateChartWithDataAsync(string appName, string subject, string requestText, string queryData)
+        {
+            // Construct a chart-specific prompt for Gemini that instructs it to use the provided data
+            var prompt = $@"You are an AI assistant helping with the '{appName}' application.
+
+Subject: {subject}
+
+User's Request:
+{requestText}
+
+Database Query Results (JSON format):
+{queryData}
+
+IMPORTANT INSTRUCTIONS:
+- Generate ONLY the data table(s) needed for the requested chart(s) based ENTIRELY on the data provided above
+- DO NOT include any introductory text, explanations, summaries, or analysis
+- DO NOT include any concluding remarks or additional information
+- DO NOT include any textual description of what the chart would display
+- The chart(s) will be rendered by the application itself automatically
+- If the user requested MULTIPLE charts (e.g., 2 pie charts, a bar chart and a line chart):
+  * Create a SEPARATE table for EACH chart
+  * Each table should contain ONLY the data for that specific chart
+  * Add a clear heading above each table indicating what chart it represents (e.g., '### Pie Chart: Sales by Region', '### Bar Chart: Revenue by Month')
+  * Each table should have exactly 2 columns: the category/label column and the value column
+  * DO NOT combine multiple charts' data into one table
+- If only one chart was requested, provide one table with the chart data
+- Use the user's request to understand what chart type(s) to create and what data to include
+- Use Markdown table format for the data
+- Ensure each table has proper headers
+- DO NOT make up or assume any data that is not present in the query results
+- DO NOT include any code snippets, JSON, or programming language syntax
+- Start your response directly with the table(s) (using Markdown table syntax with optional headings)
+
+Please provide only the chart data table(s) now:";
+
+            return await GenerateContentAsync(prompt);
+        }
+
+        /// <summary>
+        /// Generates a formal study based on the user's request
+        /// </summary>
+        /// <param name="appName">Application name</param>
+        /// <param name="subject">Request subject</param>
+        /// <param name="requestText">Detailed request text</param>
+        /// <returns>Generated study response in standard academic format</returns>
+        public async Task<string> GenerateStudyAsync(string appName, string subject, string requestText)
+        {
+            // Construct a study-specific prompt for Gemini
+            var prompt = $@"You are an AI assistant helping with the '{appName}' application to generate formal academic studies.
+
+Subject: {subject}
+
+Request:
+{requestText}
+
+IMPORTANT INSTRUCTIONS:
+- Generate a comprehensive, formal study that addresses this request
+- Use standard academic study format with the following sections:
+  * **Abstract**: A brief summary of the study (100-200 words)
+  * **Introduction**: Background, context, and objectives
+  * **Methodology**: Approach and methods used (if applicable)
+  * **Results/Findings**: Key findings and data analysis
+  * **Discussion**: Interpretation of results and implications
+  * **Conclusion**: Summary and recommendations
+  * **References** (if applicable): Any sources or citations
+- Use professional academic language and tone
+- Include proper headings and subheadings using Markdown formatting
+- Support findings with data, examples, and analysis where appropriate
+- Maintain objectivity and scholarly rigor throughout
+- Use tables or charts if they enhance the presentation of data
+- DO NOT include any code snippets, JSON, or programming language syntax
+- Format the study using Markdown for better presentation
+
+Please generate the complete formal study now:";
+
+            return await GenerateContentAsync(prompt);
+        }
+
+        /// <summary>
+        /// Generates a formal study based on the user's request and provided data from database query results
+        /// </summary>
+        /// <param name="appName">Application name</param>
+        /// <param name="subject">Request subject</param>
+        /// <param name="requestText">Detailed request text containing user's instructions</param>
+        /// <param name="queryData">JSON data containing the results from the executed SQL query</param>
+        /// <returns>Generated study response in standard academic format based on the provided data</returns>
+        public async Task<string> GenerateStudyWithDataAsync(string appName, string subject, string requestText, string queryData)
+        {
+            // Construct a study-specific prompt for Gemini that incorporates the data
+            var prompt = $@"You are an AI assistant helping with the '{appName}' application to generate formal academic studies with data.
+
+Subject: {subject}
+
+User's Request:
+{requestText}
+
+Database Query Results (JSON format):
+{queryData}
+
+IMPORTANT INSTRUCTIONS:
+- Generate a comprehensive, formal study based ENTIRELY on the data provided above in the 'Database Query Results' section
+- Use standard academic study format with the following sections:
+  * **Abstract**: A brief summary of the study based on the data (100-200 words)
+  * **Introduction**: Background, context, and objectives
+  * **Methodology**: Data collection and analysis approach
+  * **Results/Findings**: Detailed presentation and analysis of the provided data
+  * **Discussion**: Interpretation of results, patterns, and implications
+  * **Conclusion**: Summary of key findings and recommendations
+  * **References** (if applicable): Any sources or citations
+- Use professional academic language and tone
+- Include proper headings and subheadings using Markdown formatting
+- Present the data using properly formatted tables within the study
+- Include statistical analysis, trends, and patterns observed in the data
+- DO NOT make up or assume any data that is not present in the query results
+- Maintain objectivity and scholarly rigor throughout
+- Support all findings and conclusions with the actual data provided
+- DO NOT include any code snippets, JSON, or programming language syntax
+- Format the study using Markdown for better presentation
+
+Please generate the complete formal study now:";
+
+            return await GenerateContentAsync(prompt);
+        }
     }
 }

@@ -95,21 +95,43 @@ namespace AIReportsTool.API.Controllers
 
                 try
                 {
-                    if (responseFormat == "email")
+                    switch (responseFormat)
                     {
-                        geminiResponse = await _geminiService.GenerateEmailAsync(
-                            "IntellegentReportMaker",
-                            payload.Subject,
-                            payload.RequestText
-                        );
-                    }
-                    else
-                    {
-                        geminiResponse = await _geminiService.GenerateReportAsync(
-                            "IntellegentReportMaker",
-                            payload.Subject,
-                            payload.RequestText
-                        );
+                        case "email":
+                            geminiResponse = await _geminiService.GenerateEmailAsync(
+                                "IntellegentReportMaker",
+                                payload.Subject,
+                                payload.RequestText
+                            );
+                            break;
+                        case "table":
+                            geminiResponse = await _geminiService.GenerateTableAsync(
+                                "IntellegentReportMaker",
+                                payload.Subject,
+                                payload.RequestText
+                            );
+                            break;
+                        case "chart":
+                            geminiResponse = await _geminiService.GenerateChartAsync(
+                                "IntellegentReportMaker",
+                                payload.Subject,
+                                payload.RequestText
+                            );
+                            break;
+                        case "study":
+                            geminiResponse = await _geminiService.GenerateStudyAsync(
+                                "IntellegentReportMaker",
+                                payload.Subject,
+                                payload.RequestText
+                            );
+                            break;
+                        default: // "report"
+                            geminiResponse = await _geminiService.GenerateReportAsync(
+                                "IntellegentReportMaker",
+                                payload.Subject,
+                                payload.RequestText
+                            );
+                            break;
                     }
                 }
                 catch (Exception geminiEx)
@@ -432,23 +454,48 @@ namespace AIReportsTool.API.Controllers
 
                 try
                 {
-                    if (responseFormat == "email")
+                    switch (responseFormat)
                     {
-                        reportResponse = await _geminiService.GenerateEmailWithDataAsync(
-                            "IntellegentReportMaker",
-                            payload.Subject,
-                            payload.RequestText,
-                            resultDataJson
-                        );
-                    }
-                    else
-                    {
-                        reportResponse = await _geminiService.GenerateReportWithDataAsync(
-                            "IntellegentReportMaker",
-                            payload.Subject,
-                            payload.RequestText,
-                            resultDataJson
-                        );
+                        case "email":
+                            reportResponse = await _geminiService.GenerateEmailWithDataAsync(
+                                "IntellegentReportMaker",
+                                payload.Subject,
+                                payload.RequestText,
+                                resultDataJson
+                            );
+                            break;
+                        case "table":
+                            reportResponse = await _geminiService.GenerateTableWithDataAsync(
+                                "IntellegentReportMaker",
+                                payload.Subject,
+                                payload.RequestText,
+                                resultDataJson
+                            );
+                            break;
+                        case "chart":
+                            reportResponse = await _geminiService.GenerateChartWithDataAsync(
+                                "IntellegentReportMaker",
+                                payload.Subject,
+                                payload.RequestText,
+                                resultDataJson
+                            );
+                            break;
+                        case "study":
+                            reportResponse = await _geminiService.GenerateStudyWithDataAsync(
+                                "IntellegentReportMaker",
+                                payload.Subject,
+                                payload.RequestText,
+                                resultDataJson
+                            );
+                            break;
+                        default: // "report"
+                            reportResponse = await _geminiService.GenerateReportWithDataAsync(
+                                "IntellegentReportMaker",
+                                payload.Subject,
+                                payload.RequestText,
+                                resultDataJson
+                            );
+                            break;
                     }
                 }
                 catch (Exception geminiEx)
@@ -465,7 +512,14 @@ namespace AIReportsTool.API.Controllers
                 var response = new RequestResponseModel
                 {
                     Status = 1,
-                    Message = responseFormat == "email" ? "Email generated successfully" : "Report generated successfully",
+                    Message = responseFormat switch
+                    {
+                        "email" => "Email generated successfully",
+                        "table" => "Table generated successfully",
+                        "chart" => "Chart generated successfully",
+                        "study" => "Study generated successfully",
+                        _ => "Report generated successfully"
+                    },
                     ResponseText = reportResponse
                 };
 
@@ -1086,22 +1140,107 @@ Please provide your response in the following format:
         }
 
         /// <summary>
-        /// Determines the response format (email or report) based on explicit format or intelligent detection
+        /// Determines the response format (table, chart, study, email, or report) based on explicit format or intelligent detection
         /// </summary>
         /// <param name="explicitFormat">Explicitly specified format from the request payload</param>
         /// <param name="requestText">The request text to analyze for format detection</param>
         /// <param name="subject">The subject to analyze for format detection</param>
-        /// <returns>The determined format: "email" or "report"</returns>
+        /// <returns>The determined format: "table", "chart", "study", "email", or "report"</returns>
         private string DetermineResponseFormat(string? explicitFormat, string requestText, string subject)
         {
             // If format is explicitly specified, use it
             if (!string.IsNullOrWhiteSpace(explicitFormat))
             {
-                return explicitFormat.ToLower() == "email" ? "email" : "report";
+                var format = explicitFormat.ToLower();
+                if (format == "table" || format == "chart" || format == "study" || format == "email")
+                {
+                    return format;
+                }
+                return "report"; // Default for unknown explicit formats
             }
 
-            // Intelligent detection: check for email-related keywords in request text and subject
+            // Intelligent detection: check for format-related keywords in request text and subject
             var combinedText = $"{subject} {requestText}".ToLower();
+
+            // Table indicators (highest priority after explicit format)
+            var tableKeywords = new[]
+            {
+                "only table",
+                "just table",
+                "table only",
+                "only a table",
+                "just a table",
+                "show me a table",
+                "show me table",
+                "display table",
+                "display a table",
+                "create table",
+                "create a table",
+                "generate table",
+                "generate a table",
+                "give me table",
+                "give me a table",
+                "i want table",
+                "i want a table",
+                "need table",
+                "need a table"
+            };
+
+            // Chart indicators
+            var chartKeywords = new[]
+            {
+                "only chart",
+                "just chart",
+                "chart only",
+                "only a chart",
+                "just a chart",
+                "only pie chart",
+                "only bar chart",
+                "only line chart",
+                "only area chart",
+                "only scatter chart",
+                "just pie chart",
+                "just bar chart",
+                "just line chart",
+                "pie chart only",
+                "bar chart only",
+                "line chart only",
+                "show me chart",
+                "show me a chart",
+                "display chart",
+                "display a chart",
+                "create chart",
+                "create a chart",
+                "generate chart",
+                "generate a chart",
+                "visualize with",
+                "visualize using",
+                "i want chart",
+                "i want a chart",
+                "need chart",
+                "need a chart"
+            };
+
+            // Study indicators
+            var studyKeywords = new[]
+            {
+                "study",
+                "research study",
+                "case study",
+                "analytical study",
+                "detailed study",
+                "comprehensive study",
+                "create study",
+                "create a study",
+                "generate study",
+                "generate a study",
+                "write study",
+                "write a study",
+                "prepare study",
+                "prepare a study",
+                "conduct study",
+                "conduct a study"
+            };
 
             // Email indicators
             var emailKeywords = new[]
@@ -1123,7 +1262,34 @@ Please provide your response in the following format:
                 "business email"
             };
 
-            // Check if any email keyword is present
+            // Check for table indicators first
+            foreach (var keyword in tableKeywords)
+            {
+                if (combinedText.Contains(keyword))
+                {
+                    return "table";
+                }
+            }
+
+            // Check for chart indicators
+            foreach (var keyword in chartKeywords)
+            {
+                if (combinedText.Contains(keyword))
+                {
+                    return "chart";
+                }
+            }
+
+            // Check for study indicators
+            foreach (var keyword in studyKeywords)
+            {
+                if (combinedText.Contains(keyword))
+                {
+                    return "study";
+                }
+            }
+
+            // Check for email indicators
             foreach (var keyword in emailKeywords)
             {
                 if (combinedText.Contains(keyword))
@@ -1132,7 +1298,7 @@ Please provide your response in the following format:
                 }
             }
 
-            // Default to report if no email indicators found
+            // Default to report if no specific indicators found
             return "report";
         }
     }
