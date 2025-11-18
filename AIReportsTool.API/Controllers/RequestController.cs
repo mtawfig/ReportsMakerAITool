@@ -365,73 +365,174 @@ namespace AIReportsTool.API.Controllers
                     return BadRequest(errorResponse);
                 }
 
-                // Build the specialized prompt for Gemini
-                var geminiPrompt = BuildQueryGenerationPrompt(
-                    payload.Subject,
-                    payload.RequestText,
-                    appDbDetails.DbProvider,
-                    appDbDetails.DbStructureJson
-                );
+                // Retry logic for SQL generation and execution (max 3 attempts)
+                const int maxAttempts = 3;
+                int attempt = 0;
+                string sqlQuery = string.Empty;
+                string lastError = string.Empty;
+                System.Data.DataTable? queryResults = null;
+                bool querySuccessful = false;
 
-                // Call Gemini API to generate query
-                _logger.LogInformation("Calling Gemini API to generate SQL query for AppId: {AppId}", payload.AppId);
-
-                string geminiResponse;
-
-                try
+                while (attempt < maxAttempts && !querySuccessful)
                 {
-                    geminiResponse = await _geminiService.GenerateReportAsync(
-                        "QueryGenerator",
-                        payload.Subject,
-                        geminiPrompt
-                    );
+                    attempt++;
+                    _logger.LogInformation("SQL generation and execution attempt {Attempt} of {MaxAttempts} for AppId: {AppId}",
+                        attempt, maxAttempts, payload.AppId);
+
+                    try
+                    {
+                        // Build the specialized prompt for Gemini
+                        string geminiPrompt;
+
+                        if (attempt == 1)
+                        {
+                            // First attempt: use standard prompt
+                            geminiPrompt = BuildQueryGenerationPrompt(
+                                payload.Subject,
+                                payload.RequestText,
+                                appDbDetails.DbProvider,
+                                appDbDetails.DbStructureJson
+                            );
+                        }
+                        else
+                        {
+                            // Retry attempts: include previous error information
+                            geminiPrompt = BuildQueryGenerationPromptWithError(
+                                payload.Subject,
+                                payload.RequestText,
+                                appDbDetails.DbProvider,
+                                appDbDetails.DbStructureJson,
+                                sqlQuery,
+                                lastError,
+                                attempt
+                            );
+                            _logger.LogWarning("Retrying SQL generation (attempt {Attempt}) with error feedback: {Error}",
+                                attempt, lastError);
+                        }
+
+                        // Call Gemini API to generate query
+                        _logger.LogInformation("Calling Gemini API to generate SQL query (attempt {Attempt}) for AppId: {AppId}",
+                            attempt, payload.AppId);
+
+                        string geminiResponse;
+                        try
+                        {
+                            geminiResponse = await _geminiService.GenerateReportAsync(
+                                "QueryGenerator",
+                                payload.Subject,
+                                geminiPrompt
+                            );
+                        }
+                        catch (Exception geminiEx)
+                        {
+                            _logger.LogError(geminiEx, "Gemini API call failed on attempt {Attempt}", attempt);
+                            lastError = $"Gemini API error: {geminiEx.Message}";
+
+                            if (attempt == maxAttempts)
+                            {
+                                return Ok(new RequestResponseModel
+                                {
+                                    Status = 0,
+                                    Message = "Unable to generate SQL query after multiple attempts. Please try again or rephrase your request.",
+                                    ResponseText = $"The AI service encountered an error after {maxAttempts} attempts.\n\nTechnical details logged to console."
+                                });
+                            }
+                            continue;
+                        }
+
+                        // Extract SQL query from Gemini response
+                        sqlQuery = ExtractSqlQueryFromResponse(geminiResponse);
+
+                        if (string.IsNullOrWhiteSpace(sqlQuery))
+                        {
+                            _logger.LogWarning("Could not extract SQL query from Gemini response on attempt {Attempt}", attempt);
+                            lastError = "Failed to extract SQL query from AI response";
+
+                            if (attempt == maxAttempts)
+                            {
+                                return Ok(new RequestResponseModel
+                                {
+                                    Status = 0,
+                                    Message = "Unable to generate a valid SQL query. Please try rephrasing your request.",
+                                    ResponseText = $"Failed to extract SQL query after {maxAttempts} attempts.\n\nTechnical details logged to console."
+                                });
+                            }
+                            continue;
+                        }
+
+                        // Log the generated SQL query
+                        _logger.LogInformation("Generated SQL Query (attempt {Attempt}): {SqlQuery}", attempt, sqlQuery);
+
+                        // Execute the SQL query based on database provider
+                        try
+                        {
+                            queryResults = await ExecuteSqlQuery(
+                                sqlQuery,
+                                appDbDetails.DbProvider,
+                                appDbDetails.DbConnection
+                            );
+
+                            // If we get here, query was successful
+                            querySuccessful = true;
+                            _logger.LogInformation("SQL query executed successfully on attempt {Attempt}", attempt);
+                        }
+                        catch (Exception queryEx)
+                        {
+                            lastError = queryEx.Message;
+                            _logger.LogError(queryEx, "SQL execution error on attempt {Attempt}: {Error}. SQL: {SqlQuery}",
+                                attempt, queryEx.Message, sqlQuery);
+
+                            // If this was the last attempt, return user-friendly error
+                            if (attempt == maxAttempts)
+                            {
+                                // Log technical details to console
+                                Console.WriteLine("=== SQL EXECUTION FAILED AFTER ALL RETRIES ===");
+                                Console.WriteLine($"Attempt: {attempt}/{maxAttempts}");
+                                Console.WriteLine($"Database Provider: {appDbDetails.DbProvider}");
+                                Console.WriteLine($"SQL Query:\n{sqlQuery}");
+                                Console.WriteLine($"Error: {queryEx.Message}");
+                                Console.WriteLine($"Stack Trace:\n{queryEx.StackTrace}");
+                                Console.WriteLine("============================================");
+
+                                return Ok(new RequestResponseModel
+                                {
+                                    Status = 0,
+                                    Message = "We couldn't execute the database query successfully. The technical team has been notified.",
+                                    ResponseText = $"After {maxAttempts} attempts, the query could not be executed.\n\n" +
+                                                  $"Error: {GetUserFriendlyErrorMessage(queryEx.Message)}\n\n" +
+                                                  $"Please try rephrasing your request or contact support if the issue persists.\n\n" +
+                                                  $"Technical details have been logged for investigation."
+                                });
+                            }
+                            // Otherwise, continue to next attempt
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Unexpected error during SQL generation/execution on attempt {Attempt}", attempt);
+                        lastError = ex.Message;
+
+                        if (attempt == maxAttempts)
+                        {
+                            return Ok(new RequestResponseModel
+                            {
+                                Status = 0,
+                                Message = "An unexpected error occurred. Please try again.",
+                                ResponseText = $"Technical details logged to console."
+                            });
+                        }
+                    }
                 }
-                catch (Exception geminiEx)
+
+                // Verify we have results before continuing
+                if (!querySuccessful || queryResults == null)
                 {
-                    _logger.LogError(geminiEx, "Gemini API call failed");
+                    _logger.LogError("Query execution loop completed but no results obtained for AppId: {AppId}", payload.AppId);
                     return Ok(new RequestResponseModel
                     {
                         Status = 0,
-                        Message = "Error generating SQL query",
-                        ResponseText = geminiEx.Message
-                    });
-                }
-
-                // Extract SQL query from Gemini response
-                var sqlQuery = ExtractSqlQueryFromResponse(geminiResponse);
-
-                if (string.IsNullOrWhiteSpace(sqlQuery))
-                {
-                    _logger.LogWarning("Could not extract SQL query from Gemini response");
-                    return Ok(new RequestResponseModel
-                    {
-                        Status = 0,
-                        Message = "Failed to extract SQL query from AI response",
-                        ResponseText = geminiResponse
-                    });
-                }
-
-                // Log the generated SQL query
-                _logger.LogInformation("Generated SQL Query: {SqlQuery}", sqlQuery);
-
-                // Execute the SQL query based on database provider
-                System.Data.DataTable queryResults;
-                try
-                {
-                    queryResults = await ExecuteSqlQuery(
-                        sqlQuery,
-                        appDbDetails.DbProvider,
-                        appDbDetails.DbConnection
-                    );
-                }
-                catch (Exception queryEx)
-                {
-                    _logger.LogError(queryEx, "Error executing SQL query");
-                    return Ok(new RequestResponseModel
-                    {
-                        Status = 0,
-                        Message = $"Error executing query: {queryEx.Message}",
-                        ResponseText = $"SQL Query:\n{sqlQuery}\n\nError: {queryEx.Message}"
+                        Message = "Unable to retrieve data. Please try again.",
+                        ResponseText = string.Empty
                     });
                 }
 
@@ -653,10 +754,56 @@ Database Structure (JSON):
 1. Carefully analyze the user's request to understand what data they want to retrieve or manipulate.
 2. Study the provided database structure JSON which contains all tables, columns, and data types.
 3. Each table and column in the json of database structure has a ArabicTranslation below the Name to help you understand its meaning when the the user wrote the request in Arabic.
-4. Generate a valid SQL query that is compatible with {dbProvider} database syntax and verify the generated SQL query is valid before sending the response.
+4. Generate a valid SQL query that is compatible with {dbProvider} database syntax.
 5. The query should be optimized, efficient, and follow best practices for {dbProvider}.
 6. Don't add comments within the SQL query.
-6. ALWAYS apply the following intelligent matching rules to ensure flexible and accurate data retrieval.
+7. ALWAYS apply the following intelligent matching rules to ensure flexible and accurate data retrieval.
+
+**CRITICAL - SQL VALIDATION REQUIREMENTS:**
+Before providing your response, you MUST validate the SQL query thoroughly. The query MUST be 100% syntactically correct and executable. Validate the following:
+
+1. **GROUP BY Validation** (CRITICAL for {dbProvider}):
+   - Every non-aggregated column in the SELECT clause MUST appear in the GROUP BY clause
+   - Example WRONG: SELECT Name, COUNT(*) FROM Employees (missing: GROUP BY Name)
+   - Example CORRECT: SELECT Name, COUNT(*) FROM Employees GROUP BY Name
+   - For Oracle: ORA-00979 error occurs when GROUP BY is missing required columns
+
+2. **Column Existence Validation**:
+   - ONLY use columns that exist in the provided database structure JSON
+   - Double-check spelling and exact column names
+   - Verify table names match the database structure exactly
+
+3. **JOIN Syntax Validation**:
+   - Ensure all JOINs have proper ON clauses with valid foreign key relationships
+   - Verify joined columns exist in both tables
+   - Use proper JOIN syntax for {dbProvider}
+
+4. **Aggregate Function Validation**:
+   - When using COUNT, SUM, AVG, MAX, MIN, ensure proper GROUP BY
+   - Don't mix aggregated and non-aggregated columns without GROUP BY
+
+5. **Date Function Validation**:
+   - Use correct date functions for {dbProvider}:
+     * Oracle: SYSDATE, TRUNC, TO_DATE, ADD_MONTHS
+     * SQL Server: GETDATE(), DATEADD, DATEDIFF
+     * MySQL: NOW(), DATE_ADD, DATE_SUB
+
+6. **WHERE Clause Validation**:
+   - Ensure column names in WHERE exist in the tables
+   - Use proper comparison operators for data types
+   - Validate that LIKE patterns are syntactically correct
+
+7. **Syntax Compatibility**:
+   - Ensure TOP/LIMIT/ROWNUM syntax matches {dbProvider}
+   - Use correct string concatenation (|| for Oracle, + for SQL Server, CONCAT for MySQL)
+   - Verify quote usage (single quotes for strings)
+
+**DOUBLE-CHECK BEFORE RESPONDING:**
+- Re-read your generated SQL query line by line
+- Verify every column in SELECT that is not wrapped in an aggregate function appears in GROUP BY
+- Confirm all table and column names exist in the database structure JSON
+- Test the logic mentally - would this query execute without errors?
+- If you're not 100% certain the query is valid, revise it until you are certain
 
 **CRITICAL - INTELLIGENT MATCHING RULES:**
 
@@ -809,6 +956,144 @@ Please provide your response in the following format:
 - CRITICAL: For departments/sections/designations, you MUST use SEMANTIC/CONTEXTUAL matching - understand the MEANING and match only items in the same semantic domain. DO NOT use broad LIKE patterns that will match unrelated items with similar words";
 
             return prompt;
+        }
+
+        /// <summary>
+        /// Builds a specialized prompt for Gemini to regenerate SQL queries with error feedback
+        /// </summary>
+        private string BuildQueryGenerationPromptWithError(
+            string subject,
+            string requestText,
+            string dbProvider,
+            string dbStructureJson,
+            string previousSqlQuery,
+            string errorMessage,
+            int attemptNumber)
+        {
+            var prompt = $@"You are an expert SQL query generator. Your previous SQL query generated an error. You need to analyze the error and generate a corrected SQL query.
+
+**User Request:**
+{requestText}
+
+**Database Information:**
+Database Type: {dbProvider}
+Database Structure (JSON):
+{dbStructureJson}
+
+**PREVIOUS ATTEMPT #{attemptNumber - 1} - FAILED:**
+
+**Previous SQL Query:**
+```sql
+{previousSqlQuery}
+```
+
+**Error Received:**
+{errorMessage}
+
+**CRITICAL INSTRUCTIONS FOR RETRY:**
+
+1. **Analyze the Error Carefully:**
+   - Read the error message thoroughly to understand what went wrong
+   - Common errors to look for:
+     * ORA-00979 or ""not a GROUP BY expression"" → Add missing columns to GROUP BY
+     * ""Invalid column name"" → Check column spelling and existence in database structure
+     * ""Invalid object name"" → Check table name spelling and existence
+     * ""Syntax error"" → Review SQL syntax for {dbProvider}
+
+2. **Fix the Specific Issue:**
+   - Do NOT just regenerate the same query
+   - Address the root cause identified in the error message
+   - If it's a GROUP BY error, ensure EVERY non-aggregated column in SELECT is in GROUP BY
+   - If it's a column name error, verify the exact column name from the database structure JSON
+   - If it's a syntax error, use correct {dbProvider} syntax
+
+3. **Validate Your Corrected Query:**
+   - Double-check that you've fixed the specific error mentioned
+   - Verify all column names exist in the database structure
+   - Ensure GROUP BY includes all non-aggregated SELECT columns
+   - Confirm JOIN conditions are valid
+   - Make sure the syntax is compatible with {dbProvider}
+
+4. **Response Format:**
+   Provide your corrected query in this format:
+
+## Summary
+[Brief explanation of what was wrong and how you fixed it]
+
+## SQL Query
+```sql
+[Your CORRECTED SQL query here - make sure the error is fixed]
+```
+
+## Explanation
+[Explain what you changed to fix the error]
+
+**IMPORTANT:**
+- This is attempt #{attemptNumber} of 3 maximum attempts
+- You MUST fix the error from the previous attempt
+- Do NOT repeat the same mistake
+- Start directly with the Summary section
+- The corrected query MUST be syntactically valid for {dbProvider}";
+
+            return prompt;
+        }
+
+        /// <summary>
+        /// Converts technical database error messages to user-friendly messages
+        /// </summary>
+        private string GetUserFriendlyErrorMessage(string technicalError)
+        {
+            if (string.IsNullOrWhiteSpace(technicalError))
+                return "An unknown database error occurred.";
+
+            // Convert common Oracle errors
+            if (technicalError.Contains("ORA-00979"))
+                return "There was an issue with data grouping in the query.";
+
+            if (technicalError.Contains("ORA-00942"))
+                return "The query referenced a table or view that doesn't exist.";
+
+            if (technicalError.Contains("ORA-00904"))
+                return "The query referenced a column that doesn't exist.";
+
+            if (technicalError.Contains("ORA-01722"))
+                return "There was a data type mismatch in the query.";
+
+            if (technicalError.Contains("ORA-00933") || technicalError.Contains("ORA-00936"))
+                return "There was a syntax error in the generated query.";
+
+            // Convert common SQL Server errors
+            if (technicalError.Contains("Invalid column name"))
+                return "The query referenced a column that doesn't exist in the database.";
+
+            if (technicalError.Contains("Invalid object name"))
+                return "The query referenced a table that doesn't exist in the database.";
+
+            if (technicalError.Contains("Incorrect syntax near"))
+                return "There was a syntax error in the generated query.";
+
+            if (technicalError.Contains("Column") && technicalError.Contains("is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause"))
+                return "There was an issue with data grouping in the query.";
+
+            // Convert common MySQL errors
+            if (technicalError.Contains("Unknown column"))
+                return "The query referenced a column that doesn't exist in the database.";
+
+            if (technicalError.Contains("Table") && technicalError.Contains("doesn't exist"))
+                return "The query referenced a table that doesn't exist in the database.";
+
+            if (technicalError.Contains("You have an error in your SQL syntax"))
+                return "There was a syntax error in the generated query.";
+
+            // Generic timeout or connection errors
+            if (technicalError.Contains("timeout") || technicalError.Contains("Timeout"))
+                return "The query took too long to execute. Try simplifying your request.";
+
+            if (technicalError.Contains("connection") || technicalError.Contains("Connection"))
+                return "There was a problem connecting to the database.";
+
+            // Default message for unknown errors
+            return "A database error occurred. Our team has been notified.";
         }
 
         /// <summary>
