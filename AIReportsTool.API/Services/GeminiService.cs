@@ -1,3 +1,4 @@
+using System.IO.Pipelines;
 using System.Text;
 using System.Text.Json;
 
@@ -229,18 +230,16 @@ namespace AIReportsTool.API.Services
         public async Task<string> GenerateReportAsync(string appName, string subject, string requestText)
         {
             // Construct a comprehensive prompt for Gemini
+            // I removed this from the line after var prompt: Subject: {subject}
             var prompt = $@"You are an AI assistant helping with the '{appName}' application.
-
-Subject: {subject}
-
 Request:
 {requestText}
-
 Please provide a detailed, well-formatted response that addresses this request. Include relevant analysis, insights, and recommendations where appropriate.
-
 IMPORTANT INSTRUCTIONS:
 - DO NOT include any code snippets in the response (no JSON, JavaScript, CSS, Python, SQL, or any other programming language code)
-- If the user requests charts (pie charts, bar charts, line charts, etc.), DO NOT include any textual description or section explaining what the chart would display. The charts will be rendered by the application itself, so only include textual analysis";
+- If the user requests charts (pie charts, bar charts, line charts, etc.), DO NOT include any textual description or section explaining what the chart would display. The charts will be rendered by the application itself, so only include textual analysis.
+- If the user requests charts(pie chart, bar chart, line chart, etc.), then generate the chart in the same type requested by the user. 
+- If the user requests a chart but did not mention the chart type then use the most appropriate chart type based on the data to be displayed.";
 
             return await GenerateContentAsync(prompt);
         }
