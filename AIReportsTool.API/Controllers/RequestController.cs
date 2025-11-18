@@ -85,17 +85,32 @@ namespace AIReportsTool.API.Controllers
 
             try
             {
+                // Determine response format (email or report)
+                string responseFormat = DetermineResponseFormat(payload.ResponseFormat, payload.RequestText, payload.Subject);
+                _logger.LogInformation("Determined response format: {Format}", responseFormat);
+
                 // Call Gemini API to generate response
                 _logger.LogInformation("Calling Gemini API for request: {Subject}", payload.Subject);
                 string geminiResponse;
 
                 try
                 {
-                    geminiResponse = await _geminiService.GenerateReportAsync(
-                        "IntellegentReportMaker",
-                        payload.Subject,
-                        payload.RequestText
-                    );
+                    if (responseFormat == "email")
+                    {
+                        geminiResponse = await _geminiService.GenerateEmailAsync(
+                            "IntellegentReportMaker",
+                            payload.Subject,
+                            payload.RequestText
+                        );
+                    }
+                    else
+                    {
+                        geminiResponse = await _geminiService.GenerateReportAsync(
+                            "IntellegentReportMaker",
+                            payload.Subject,
+                            payload.RequestText
+                        );
+                    }
                 }
                 catch (Exception geminiEx)
                 {
@@ -131,7 +146,7 @@ namespace AIReportsTool.API.Controllers
                 var responseFormatParam = OracleDbService.CreateInputParameter(
                     "p_response_format",
                     OracleDbType.NVarchar2,
-                    DBNull.Value // Will be set when format selection is implemented in UI
+                    responseFormat
                 );
 
                 var tokenParam = OracleDbService.CreateInputParameter(
@@ -407,26 +422,42 @@ namespace AIReportsTool.API.Controllers
                     WriteIndented = true
                 });
 
-                // Call Gemini to generate a report based on the data
-                _logger.LogInformation("Calling Gemini API to generate report with data for AppId: {AppId}", payload.AppId);
+                // Determine response format (email or report)
+                string responseFormat = DetermineResponseFormat(payload.ResponseFormat, payload.RequestText, payload.Subject);
+                _logger.LogInformation("Determined response format: {Format}", responseFormat);
+
+                // Call Gemini to generate a report or email based on the data
+                _logger.LogInformation("Calling Gemini API to generate {Format} with data for AppId: {AppId}", responseFormat, payload.AppId);
                 string reportResponse;
 
                 try
                 {
-                    reportResponse = await _geminiService.GenerateReportWithDataAsync(
-                        "IntellegentReportMaker",
-                        payload.Subject,
-                        payload.RequestText,
-                        resultDataJson
-                    );
+                    if (responseFormat == "email")
+                    {
+                        reportResponse = await _geminiService.GenerateEmailWithDataAsync(
+                            "IntellegentReportMaker",
+                            payload.Subject,
+                            payload.RequestText,
+                            resultDataJson
+                        );
+                    }
+                    else
+                    {
+                        reportResponse = await _geminiService.GenerateReportWithDataAsync(
+                            "IntellegentReportMaker",
+                            payload.Subject,
+                            payload.RequestText,
+                            resultDataJson
+                        );
+                    }
                 }
                 catch (Exception geminiEx)
                 {
-                    _logger.LogError(geminiEx, "Gemini API call failed for report generation with data");
+                    _logger.LogError(geminiEx, "Gemini API call failed for {Format} generation with data", responseFormat);
                     return Ok(new RequestResponseModel
                     {
                         Status = 0,
-                        Message = "Error generating report with data",
+                        Message = $"Error generating {responseFormat} with data",
                         ResponseText = geminiEx.Message
                     });
                 }
@@ -434,7 +465,7 @@ namespace AIReportsTool.API.Controllers
                 var response = new RequestResponseModel
                 {
                     Status = 1,
-                    Message = "Report generated successfully",
+                    Message = responseFormat == "email" ? "Email generated successfully" : "Report generated successfully",
                     ResponseText = reportResponse
                 };
 
@@ -469,7 +500,7 @@ namespace AIReportsTool.API.Controllers
                     var responseFormatParam = OracleDbService.CreateInputParameter(
                         "p_response_format",
                         OracleDbType.NVarchar2,
-                        DBNull.Value // Will be set when format selection is implemented in UI
+                        responseFormat
                     );
 
                     var tokenParam = OracleDbService.CreateInputParameter(
@@ -1052,6 +1083,57 @@ Please provide your response in the following format:
                     Message = $"Failed to delete request: {ex.Message}"
                 });
             }
+        }
+
+        /// <summary>
+        /// Determines the response format (email or report) based on explicit format or intelligent detection
+        /// </summary>
+        /// <param name="explicitFormat">Explicitly specified format from the request payload</param>
+        /// <param name="requestText">The request text to analyze for format detection</param>
+        /// <param name="subject">The subject to analyze for format detection</param>
+        /// <returns>The determined format: "email" or "report"</returns>
+        private string DetermineResponseFormat(string? explicitFormat, string requestText, string subject)
+        {
+            // If format is explicitly specified, use it
+            if (!string.IsNullOrWhiteSpace(explicitFormat))
+            {
+                return explicitFormat.ToLower() == "email" ? "email" : "report";
+            }
+
+            // Intelligent detection: check for email-related keywords in request text and subject
+            var combinedText = $"{subject} {requestText}".ToLower();
+
+            // Email indicators
+            var emailKeywords = new[]
+            {
+                "email",
+                "e-mail",
+                "compose",
+                "write an email",
+                "draft an email",
+                "send an email",
+                "reply to",
+                "respond to",
+                "correspondence",
+                "message to",
+                "letter to",
+                "professional email",
+                "polite email",
+                "formal email",
+                "business email"
+            };
+
+            // Check if any email keyword is present
+            foreach (var keyword in emailKeywords)
+            {
+                if (combinedText.Contains(keyword))
+                {
+                    return "email";
+                }
+            }
+
+            // Default to report if no email indicators found
+            return "report";
         }
     }
 }

@@ -246,6 +246,42 @@ IMPORTANT INSTRUCTIONS:
         }
 
         /// <summary>
+        /// Generates a professional email based on the user's request
+        /// </summary>
+        /// <param name="appName">Application name</param>
+        /// <param name="subject">Request subject</param>
+        /// <param name="requestText">Detailed request text describing the email to generate</param>
+        /// <returns>Generated email response</returns>
+        public async Task<string> GenerateEmailAsync(string appName, string subject, string requestText)
+        {
+            // Construct an email-specific prompt for Gemini
+            var prompt = $@"You are an AI assistant helping with the '{appName}' application to generate professional emails.
+
+Subject: {subject}
+
+Request:
+{requestText}
+
+IMPORTANT INSTRUCTIONS:
+- Generate a professional, well-formatted email that addresses the request
+- Include all standard email components:
+  * A clear subject line (if not already provided)
+  * An appropriate greeting/salutation
+  * The body of the email with proper formatting and paragraphs
+  * A professional closing and signature placeholder
+- Use a professional and courteous tone throughout
+- Format the email using Markdown for better presentation
+- DO NOT include any code snippets, JSON, or programming language syntax
+- If the request involves data or reports, describe them in natural language within the email body
+- Keep the email concise and focused on the main purpose
+- Use proper business email etiquette and formatting
+
+Please generate the complete email now:";
+
+            return await GenerateContentAsync(prompt);
+        }
+
+        /// <summary>
         /// Generates a report based on the user's request and provided data from database query results
         /// </summary>
         /// <param name="appName">Application name</param>
@@ -289,6 +325,49 @@ IMPORTANT INSTRUCTIONS:
 - Only include the data in tabular format and other textual analysis
 
 Please provide a detailed, well-formatted report that addresses the user's request using the provided data.";
+
+            return await GenerateContentAsync(prompt);
+        }
+
+        /// <summary>
+        /// Generates a professional email based on the user's request and provided data from database query results
+        /// </summary>
+        /// <param name="appName">Application name</param>
+        /// <param name="subject">Request subject</param>
+        /// <param name="requestText">Detailed request text containing user's instructions for the email</param>
+        /// <param name="queryData">JSON data containing the results from the executed SQL query</param>
+        /// <returns>Generated email response based on the provided data</returns>
+        public async Task<string> GenerateEmailWithDataAsync(string appName, string subject, string requestText, string queryData)
+        {
+            // Construct an email-specific prompt for Gemini that incorporates the data
+            var prompt = $@"You are an AI assistant helping with the '{appName}' application to generate professional emails with data.
+
+Subject: {subject}
+
+User's Request:
+{requestText}
+
+Database Query Results (JSON format):
+{queryData}
+
+IMPORTANT INSTRUCTIONS:
+- Generate a professional, well-formatted email that addresses the request
+- Include all standard email components:
+  * A clear subject line (if not already provided)
+  * An appropriate greeting/salutation
+  * The body of the email with proper formatting and paragraphs
+  * A professional closing and signature placeholder
+- Incorporate the data from the 'Database Query Results' into the email in a natural, professional way
+- Present the data using a properly formatted table within the email if appropriate
+- Use the user's request to understand what information to highlight and how to present it in the email
+- Use a professional and courteous tone throughout
+- Format the email using Markdown for better presentation
+- DO NOT include any code snippets, JSON, or programming language syntax
+- DO NOT make up or assume any data that is not present in the query results
+- Keep the email concise and focused on the main purpose while including the relevant data
+- Use proper business email etiquette and formatting
+
+Please generate the complete email now:";
 
             return await GenerateContentAsync(prompt);
         }

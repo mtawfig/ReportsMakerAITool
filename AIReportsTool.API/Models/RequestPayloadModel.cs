@@ -10,5 +10,6 @@ namespace AIReportsTool.API.Models
         public int AppId { get; set; }
         public string Subject { get; set; } = string.Empty;
         public string RequestText { get; set; } = string.Empty;
+        public string? ResponseFormat { get; set; } = null; // "email" or "report" (default: auto-detect)
     }
 }
