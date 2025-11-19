@@ -1342,7 +1342,7 @@ function handlePrint() {
     // Wait for content to load before printing
     setTimeout(() => {
         printWindow.print();
-    }, 500);
+    }, 1000);
 }
 
 // Handle Save PDF - saves the formatted response as PDF
@@ -1589,7 +1589,7 @@ function showMessage(type, message) {
         // Auto-remove after 5 seconds
         setTimeout(() => {
             messageDiv.remove();
-        }, 5000);
+        }, 3000);
     }
 }
 

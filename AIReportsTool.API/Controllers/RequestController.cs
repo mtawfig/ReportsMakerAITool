@@ -1235,7 +1235,7 @@ Database Structure (JSON):
             await connection.OpenAsync();
 
             using var command = new OracleCommand(sqlQuery, connection);
-            command.CommandTimeout = 30; // 30 seconds timeout
+            command.CommandTimeout = 60; // 30 seconds timeout
 
             using var adapter = new OracleDataAdapter(command);
             var dataTable = new System.Data.DataTable();
@@ -1253,7 +1253,7 @@ Database Structure (JSON):
             await connection.OpenAsync();
 
             using var command = new Microsoft.Data.SqlClient.SqlCommand(sqlQuery, connection);
-            command.CommandTimeout = 30;
+            command.CommandTimeout = 60;
 
             using var adapter = new Microsoft.Data.SqlClient.SqlDataAdapter(command);
             var dataTable = new System.Data.DataTable();
