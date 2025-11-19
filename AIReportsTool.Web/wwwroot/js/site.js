@@ -185,7 +185,11 @@ async function loadRecents() {
     if (!listElement) return;
 
     try {
-        const response = await fetch('/Recents/GetRecents');
+        // Add timestamp to prevent browser caching
+        const timestamp = new Date().getTime();
+        const response = await fetch(`/Recents/GetRecents?_=${timestamp}`, {
+            cache: 'no-store'
+        });
         const result = await response.json();
 
         if (result.Status === 1 && result.Data && result.Data.length > 0) {

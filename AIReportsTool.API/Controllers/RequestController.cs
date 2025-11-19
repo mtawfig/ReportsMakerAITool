@@ -753,11 +753,60 @@ Database Structure (JSON):
 **Instructions:**
 1. Carefully analyze the user's request to understand what data they want to retrieve or manipulate.
 2. Study the provided database structure JSON which contains all tables, columns, and data types.
-3. Each table and column in the json of database structure has a ArabicTranslation below the Name to help you understand its meaning when the the user wrote the request in Arabic.
-4. Generate a valid SQL query that is compatible with {dbProvider} database syntax.
-5. The query should be optimized, efficient, and follow best practices for {dbProvider}.
-6. Don't add comments within the SQL query.
-7. ALWAYS apply the following intelligent matching rules to ensure flexible and accurate data retrieval.
+3. Generate a valid SQL query that is compatible with {dbProvider} database syntax.
+4. The query should be optimized, efficient, and follow best practices for {dbProvider}.
+5. Don't add comments within the SQL query.
+6. ALWAYS apply the following intelligent matching rules to ensure flexible and accurate data retrieval.
+
+**CRITICAL - ARABIC QUERY TRANSLATION RULES:**
+When the user's request is in Arabic, you MUST follow these rules to ensure accurate table and column selection:
+
+1. **NameArabicTranslation is the PRIMARY SOURCE OF TRUTH**:
+   - Each table and column in the database structure JSON has a ""NameArabicTranslation"" field
+   - This field provides the OFFICIAL Arabic name/translation for that table or column
+   - You MUST prioritize these translations over your own natural language understanding
+   - ONLY use your own understanding if a NameArabicTranslation is missing or empty
+
+2. **STEP-BY-STEP PROCESS FOR ARABIC QUERIES**:
+   Step 1: Extract all Arabic nouns/terms from the user's request
+   Step 2: For EACH Arabic term, search for EXACT matches in the NameArabicTranslation fields
+   Step 3: If you find a match, use THAT table/column (not what you think it means)
+   Step 4: If NO match is found, then and only then use your natural language understanding
+
+3. **CRITICAL EXAMPLES - Common Mistranslations to AVOID**:
+
+   Example 1: ""القسم"" (Section vs Department)
+   - User request: ""موظفي قسم الشبكات"" (Network Section employees)
+   - ❌ WRONG: Translating ""القسم"" as ""Department"" → querying DEPARTMENT_MASTER table
+   - ✅ CORRECT: Check NameArabicTranslation → ""القسم"" maps to SECTION_MASTER table
+   - Therefore: Query SECTION_MASTER table, NOT DEPARTMENT_MASTER
+
+   Example 2: ""الإدارة"" (Department vs Administration)
+   - User request: ""موظفي إدارة تقنية المعلومات"" (IT Department employees)
+   - ❌ WRONG: Translating ""الإدارة"" as ""Administration"" or ""Section""
+   - ✅ CORRECT: Check NameArabicTranslation → ""الإدارة"" maps to DEPARTMENT_MASTER table
+   - Therefore: Query DEPARTMENT_MASTER table, NOT SECTION_MASTER
+
+   Example 3: Column Selection
+   - User request: ""اسم القسم"" (Section name)
+   - ❌ WRONG: Using your guess for which column holds the section name
+   - ✅ CORRECT: Find column where NameArabicTranslation = ""اسم القسم"" or ""اسم القسم (عربي)"" or ""اسم القسم (إنجليزي)""
+   - Use that EXACT column name from the database structure
+
+4. **HANDLING PARTIAL MATCHES**:
+   - If user says ""القسم"" and you find NameArabicTranslation like ""قائمة الأقسام"" (List of Sections) or ""رمز القسم"" (Section Code), these are MATCHES
+   - The key word ""القسم"" appearing in NameArabicTranslation indicates this is related to sections
+   - Similarly, ""الإدارة"" in NameArabicTranslation indicates departments
+
+5. **VERIFICATION CHECKLIST** (MANDATORY for all Arabic queries):
+   Before finalizing your SQL query, verify:
+   ☑ I extracted all Arabic terms from the user's request
+   ☑ I searched for each term in the NameArabicTranslation fields
+   ☑ I used the table/column that matches the NameArabicTranslation, NOT my interpretation
+   ☑ If the user mentioned ""القسم"", I'm querying the SECTION table (not DEPARTMENT)
+   ☑ If the user mentioned ""الإدارة"", I'm querying the DEPARTMENT table (not SECTION)
+
+6. **REMEMBER**: Your natural language understanding of Arabic is SECONDARY. The NameArabicTranslation field is the authoritative mapping. When in doubt, match the Arabic term to NameArabicTranslation FIRST.
 
 **CRITICAL - SQL VALIDATION REQUIREMENTS:**
 Before providing your response, you MUST validate the SQL query thoroughly. The query MUST be 100% syntactically correct and executable. Validate the following:
@@ -1006,6 +1055,17 @@ Database Structure (JSON):
    - If it's a GROUP BY error, ensure EVERY non-aggregated column in SELECT is in GROUP BY
    - If it's a column name error, verify the exact column name from the database structure JSON
    - If it's a syntax error, use correct {dbProvider} syntax
+
+**CRITICAL - ARABIC QUERY TRANSLATION RULES:**
+If the user's request is in Arabic, you MUST follow these rules:
+
+- **NameArabicTranslation is PRIMARY**: Each table/column has a NameArabicTranslation field - this is the OFFICIAL Arabic name
+- **Match Arabic terms to NameArabicTranslation FIRST**: Extract Arabic terms from user's request → Match to NameArabicTranslation → Use that table/column
+- **Common mistakes to avoid**:
+  * ""القسم"" → SECTION table (NOT Department)
+  * ""الإدارة"" → DEPARTMENT table (NOT Section)
+  * Always check NameArabicTranslation before using your own understanding
+- **Verification**: Ensure you're querying the correct table based on NameArabicTranslation, not your interpretation
 
 3. **Validate Your Corrected Query:**
    - Double-check that you've fixed the specific error mentioned
