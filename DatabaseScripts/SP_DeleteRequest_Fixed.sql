@@ -4,14 +4,16 @@
 -- This is the corrected version of the SP_DeleteRequest stored procedure.
 --
 -- ISSUE FIXED:
--- Removed the RAISE statement from the EXCEPTION block. The original version
--- was re-throwing exceptions after setting output parameters, which prevented
--- the calling application from receiving proper error status and messages.
+-- Removed RAISE_APPLICATION_ERROR that was preventing OUT parameters from being
+-- properly returned to the C# application. The issue occurred when a request ID
+-- was not found - the exception would prevent the application from receiving
+-- the error status and message through the OUT parameters.
 --
 -- CHANGES:
--- 1. Removed "RAISE;" from the EXCEPTION handler
--- 2. Now properly returns p_status=0 and p_message on errors
--- 3. The calling application can now handle errors gracefully
+-- 1. Removed RAISE_APPLICATION_ERROR from the main logic
+-- 2. Handle "not found" case gracefully by setting p_status=0 and appropriate message
+-- 3. Only use EXCEPTION block for unexpected errors
+-- 4. Now properly returns error status via OUT parameters instead of throwing exceptions
 --
 -- DEPLOYMENT INSTRUCTIONS:
 -- Run this script as the database owner to replace the existing procedure:
@@ -31,31 +33,25 @@ BEGIN
 
     -- Check if any rows were deleted
     IF SQL%ROWCOUNT = 0 THEN
-        RAISE_APPLICATION_ERROR(-20001, 'Request ID not found: ' || p_request_id);
+        -- Request not found - return error status gracefully
+        -- DO NOT use RAISE_APPLICATION_ERROR as it prevents OUT parameters from being returned
+        ROLLBACK;
+        p_status := 0;
+        p_message := 'Request ID not found: ' || p_request_id;
+    ELSE
+        -- Delete successful - commit and return success status
+        COMMIT;
+        p_status := 1;
+        p_message := 'Deleted';
     END IF;
-
-    -- Commit the transaction
-    COMMIT;
-
-    -- Set success status
-    p_status := 1;
-    p_message := 'Deleted';
 
 EXCEPTION
     WHEN OTHERS THEN
-        -- Rollback the transaction on error
+        -- Handle unexpected errors
         ROLLBACK;
-
-        -- Set error status and message
         p_status := 0;
         p_message := 'Failed to delete: ' || SQLERRM;
-
-        -- IMPORTANT: Do NOT re-raise the exception here
-        -- The output parameters will communicate the error to the calling application
-        -- Removing RAISE allows the procedure to complete successfully
-        -- and return the error status via output parameters
-
-        -- REMOVED: RAISE;
+        -- Do NOT re-raise - let the procedure complete and return error via OUT parameters
 END SP_DeleteRequest;
 /
 
