@@ -525,6 +525,9 @@ async function handleGetQuery() {
             lastResponseText = result.ResponseText;
             enableShareButton();
             showMessage('success', result.Message);
+
+            // Reload recents to show the new request
+            await loadRecents();
         } else {
             // Error
             showMessage('error', result.Message || (window.isArabic ?
