@@ -1277,6 +1277,23 @@ textarea.form-control {
     height: 400px !important;
 }
 
+/* Pie/Doughnut/Polar charts should maintain square aspect ratio */
+.chart-container.pie-chart,
+.chart-container.doughnut-chart,
+.chart-container.polar-chart {
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.chart-container.pie-chart canvas,
+.chart-container.doughnut-chart canvas,
+.chart-container.polar-chart canvas {
+    width: 100% !important;
+    height: auto !important;
+    max-height: 500px;
+}
+
 /* =======================
    Loading Overlay
    ======================= */
