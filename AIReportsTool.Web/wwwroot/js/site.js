@@ -993,12 +993,13 @@ function extractChartDataFromTables(containerElement, originalText, userQuery = 
 
             console.log(`Table ${tableIndex + 1}: Chart data extracted:`, { chartType, labels, values, title });
 
-            // Add to collection
+            // Add to collection with reference to the table element
             allChartsData.push({
                 chartType: chartType,
                 labels: labels,
                 values: values,
-                title: title
+                title: title,
+                tableElement: table // Store reference to the table
             });
             return; // Move to next table
         }
@@ -1041,12 +1042,13 @@ function extractChartDataFromTables(containerElement, originalText, userQuery = 
 
         console.log(`Table ${tableIndex + 1}: Chart data extracted:`, { chartType, labels, values, title });
 
-        // Add to collection
+        // Add to collection with reference to the table element
         allChartsData.push({
             chartType: chartType,
             labels: labels,
             values: values,
-            title: title
+            title: title,
+            tableElement: table // Store reference to the table
         });
     });
 
@@ -1069,6 +1071,14 @@ function renderChart(chartData, containerElement) {
         const chartWrapper = document.createElement('div');
         chartWrapper.className = 'chart-container';
 
+        // Add specific class for pie/doughnut/polar charts to control dimensions
+        if (chartData.chartType === 'pie' || chartData.chartType === 'doughnut' ||
+            chartData.chartType === 'donut' || chartData.chartType === 'polarArea') {
+            const chartClass = chartData.chartType === 'polarArea' ? 'polar-chart' :
+                              (chartData.chartType === 'donut' ? 'doughnut-chart' : chartData.chartType + '-chart');
+            chartWrapper.classList.add(chartClass);
+        }
+
         // Add title
         const chartTitle = document.createElement('h3');
         chartTitle.textContent = chartData.title || 'Chart';
@@ -1081,12 +1091,20 @@ function renderChart(chartData, containerElement) {
 
         // Create canvas element
         const canvas = document.createElement('canvas');
-        const chartId = 'chart-' + Date.now();
+        const chartId = 'chart-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
         canvas.id = chartId;
         chartWrapper.appendChild(canvas);
 
-        // Append to container
-        containerElement.appendChild(chartWrapper);
+        // Insert chart after the table if tableElement is provided, otherwise append to container
+        if (chartData.tableElement && chartData.tableElement.parentNode) {
+            // Insert the chart right after the table
+            chartData.tableElement.parentNode.insertBefore(chartWrapper, chartData.tableElement.nextSibling);
+            console.log('Chart inserted after its corresponding table');
+        } else {
+            // Fallback: append to container
+            containerElement.appendChild(chartWrapper);
+            console.log('Chart appended to container (no table reference)');
+        }
 
         // Chart colors
         const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a', '#fee140', '#30cfd0'];
@@ -1121,7 +1139,7 @@ function renderChart(chartData, containerElement) {
         };
 
         // Customize based on chart type
-        if (chartType === 'pie' || chartType === 'doughnut') {
+        if (chartType === 'pie' || chartType === 'doughnut' || chartType === 'donut') {
             // For pie/doughnut charts, use multiple colors
             config.data.datasets[0].backgroundColor = colors.slice(0, chartData.values.length);
             config.data.datasets[0].borderColor = '#fff';
@@ -1131,12 +1149,20 @@ function renderChart(chartData, containerElement) {
             if (chartType === 'donut') {
                 config.type = 'doughnut';
             }
+
+            // Maintain square aspect ratio for pie/doughnut charts
+            config.options.aspectRatio = 1;
+            config.options.maintainAspectRatio = true;
         } else if (chartType === 'polarArea') {
             // For polar area charts, use multiple colors
             config.type = 'polarArea';
             config.data.datasets[0].backgroundColor = colors.slice(0, chartData.values.length);
             config.data.datasets[0].borderColor = '#fff';
             config.data.datasets[0].borderWidth = 2;
+
+            // Maintain square aspect ratio for polar area charts
+            config.options.aspectRatio = 1;
+            config.options.maintainAspectRatio = true;
         } else if (chartType === 'line' || chartType === 'area') {
             // Line chart configuration
             config.data.datasets[0].backgroundColor = chartType === 'area' ? 'rgba(102, 126, 234, 0.2)' : 'transparent';
