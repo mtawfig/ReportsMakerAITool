@@ -7,6 +7,7 @@
 let selectedAppId = null;
 let selectedAppName = null;
 let lastResponseText = null;
+let lastRequestText = null; // Store user's original query for chart type detection
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function () {
@@ -424,6 +425,9 @@ async function handleSubmit() {
     showLoading();
 
     try {
+        // Store user's query for chart type detection
+        lastRequestText = requestText;
+
         const payload = {
             Token: '',
             Username: '',
@@ -504,6 +508,9 @@ async function handleGetQuery() {
     showLoading();
 
     try {
+        // Store user's query for chart type detection
+        lastRequestText = requestText;
+
         const payload = {
             Token: '',
             Username: '',
@@ -618,7 +625,8 @@ function displayResponse(responseText, removeCodeBlocks = false) {
             responseTextElement.innerHTML = htmlContent;
 
             // Detect and render charts from the ORIGINAL response text (not cleaned)
-            detectAndRenderCharts(responseText, responseTextElement);
+            // Pass user's original query for better chart type detection
+            detectAndRenderCharts(responseText, responseTextElement, lastRequestText);
         } else {
             // Fallback to plain text if marked.js is not loaded
             responseTextElement.textContent = responseText;
@@ -706,16 +714,17 @@ function escapeHtml(text) {
 }
 
 // Detect and render charts from Gemini response
-function detectAndRenderCharts(responseText, containerElement) {
+function detectAndRenderCharts(responseText, containerElement, userQuery = '') {
     if (typeof Chart === 'undefined') {
         console.log('Chart.js library not loaded');
         return;
     }
 
     console.log('Detecting charts in response...');
+    console.log('User query for chart detection:', userQuery);
 
     // Try to detect chart data patterns from raw text
-    const chartData = extractChartData(responseText);
+    const chartData = extractChartData(responseText, userQuery);
 
     if (chartData) {
         console.log('Chart data found from text:', chartData);
@@ -724,7 +733,7 @@ function detectAndRenderCharts(responseText, containerElement) {
     }
 
     // Try to detect chart data from rendered HTML tables
-    const tableChartData = extractChartDataFromTables(containerElement, responseText);
+    const tableChartData = extractChartDataFromTables(containerElement, responseText, userQuery);
     if (tableChartData) {
         // Check if it's an array of charts or a single chart
         if (Array.isArray(tableChartData)) {
@@ -745,7 +754,7 @@ function detectAndRenderCharts(responseText, containerElement) {
 }
 
 // Extract chart data from response text
-function extractChartData(text) {
+function extractChartData(text, userQuery = '') {
     // Pattern 1: Look for JSON chart data in code blocks
     const jsonMatch = text.match(/```json\s*(\{[\s\S]*?\})\s*```/);
     if (jsonMatch) {
@@ -772,8 +781,8 @@ function extractChartData(text) {
             const labels = rows.map(row => row[0]);
             const values = rows.map(row => parseFloat(row[1]) || 0);
 
-            // Detect chart type from context
-            const chartType = detectChartTypeFromContext(text);
+            // Detect chart type from context - prioritize user query
+            const chartType = detectChartTypeFromContext(text, userQuery);
 
             return {
                 chartType: chartType,
@@ -788,16 +797,40 @@ function extractChartData(text) {
 }
 
 // Detect chart type from context keywords
-function detectChartTypeFromContext(localContext, fallbackText = '') {
-    // First try to detect from local context (heading/text near the table)
-    // Then fall back to the full text if nothing found locally
+function detectChartTypeFromContext(localContext, fallbackText = '', userQuery = '') {
+    // Priority: 1) User's original query (highest priority)
+    //          2) Local context (heading/text near the table)
+    //          3) AI response text (fallback)
+    const userLower = userQuery ? userQuery.toLowerCase() : '';
     const localLower = localContext.toLowerCase();
     const fallbackLower = fallbackText.toLowerCase();
 
-    // Check local context first (prioritize specific table context)
-    if (localLower.includes('pie chart') || localLower.includes('pie')) {
+    // FIRST: Check user's original query (HIGHEST PRIORITY)
+    if (userQuery) {
+        // Check for polar area first (most specific)
+        if (userLower.includes('polar area chart') || userLower.includes('polar area')) {
+            return 'polarArea';
+        } else if (userLower.includes('pie chart') || userLower.includes('pie')) {
+            return 'pie';
+        } else if (userLower.includes('donut chart') || userLower.includes('doughnut chart') || userLower.includes('donut')) {
+            return 'donut';
+        } else if (userLower.includes('line chart') || userLower.includes('line graph')) {
+            return 'line';
+        } else if (userLower.includes('area chart') || userLower.includes('area')) {
+            return 'area';
+        } else if (userLower.includes('bar chart') || userLower.includes('horizontal bar')) {
+            return 'bar';
+        } else if (userLower.includes('column chart') || userLower.includes('column')) {
+            return 'column';
+        }
+    }
+
+    // SECOND: Check local context (table heading/nearby text)
+    if (localLower.includes('polar area chart') || localLower.includes('polar area')) {
+        return 'polarArea';
+    } else if (localLower.includes('pie chart') || localLower.includes('pie')) {
         return 'pie';
-    } else if (localLower.includes('donut chart') || localLower.includes('donut')) {
+    } else if (localLower.includes('donut chart') || localLower.includes('doughnut chart') || localLower.includes('donut')) {
         return 'donut';
     } else if (localLower.includes('line chart') || localLower.includes('line graph')) {
         return 'line';
@@ -809,11 +842,13 @@ function detectChartTypeFromContext(localContext, fallbackText = '') {
         return 'column';
     }
 
-    // If no specific type found in local context, check fallback text
+    // THIRD: Check AI response text (fallback)
     if (fallbackText) {
-        if (fallbackLower.includes('pie chart') || fallbackLower.includes('pie')) {
+        if (fallbackLower.includes('polar area chart') || fallbackLower.includes('polar area')) {
+            return 'polarArea';
+        } else if (fallbackLower.includes('pie chart') || fallbackLower.includes('pie')) {
             return 'pie';
-        } else if (fallbackLower.includes('donut chart') || fallbackLower.includes('donut')) {
+        } else if (fallbackLower.includes('donut chart') || fallbackLower.includes('doughnut chart') || fallbackLower.includes('donut')) {
             return 'donut';
         } else if (fallbackLower.includes('line chart') || fallbackLower.includes('line graph')) {
             return 'line';
@@ -853,17 +888,17 @@ function getTableContext(table) {
 }
 
 // Helper function to check if table context indicates it should be a chart
-function shouldTableBeChart(tableContext, userRequest) {
-    const combinedText = (tableContext + ' ' + userRequest).toLowerCase();
+function shouldTableBeChart(tableContext, userRequest, userQuery = '') {
+    const combinedText = (tableContext + ' ' + userRequest + ' ' + userQuery).toLowerCase();
 
     // Check for chart-related keywords
-    const chartKeywords = ['chart', 'graph', 'pie', 'donut', 'bar', 'column', 'line', 'area', 'visualization', 'visualize'];
+    const chartKeywords = ['chart', 'graph', 'pie', 'donut', 'bar', 'column', 'line', 'area', 'polar', 'visualization', 'visualize'];
 
     return chartKeywords.some(keyword => combinedText.includes(keyword));
 }
 
 // Extract chart data from rendered HTML tables
-function extractChartDataFromTables(containerElement, originalText) {
+function extractChartDataFromTables(containerElement, originalText, userQuery = '') {
     console.log('Checking for tables to convert to charts...');
 
     // Find all tables in the container
@@ -886,7 +921,8 @@ function extractChartDataFromTables(containerElement, originalText) {
         console.log(`Table ${tableIndex + 1} context: "${tableContext}"`);
 
         // Check if this table should be rendered as a chart
-        if (!shouldTableBeChart(tableContext, originalText)) {
+        // Also check user query for chart keywords
+        if (!shouldTableBeChart(tableContext, originalText, userQuery)) {
             console.log(`Table ${tableIndex + 1}: No chart keywords in context, skipping`);
             return; // Skip this table
         }
@@ -952,8 +988,8 @@ function extractChartDataFromTables(containerElement, originalText) {
                 title = `${headers[0].textContent.trim()} vs ${headers[1].textContent.trim()}`;
             }
 
-            // Detect chart type based on THIS table's context first, then fall back to full text
-            const chartType = detectChartTypeFromContext(tableContext, originalText);
+            // Detect chart type - prioritize user query, then table context, then AI response
+            const chartType = detectChartTypeFromContext(tableContext, originalText, userQuery);
 
             console.log(`Table ${tableIndex + 1}: Chart data extracted:`, { chartType, labels, values, title });
 
@@ -1000,8 +1036,8 @@ function extractChartDataFromTables(containerElement, originalText) {
             title = `${headers[0].textContent.trim()} vs ${headers[1].textContent.trim()}`;
         }
 
-        // Detect chart type based on THIS table's context first, then fall back to full text
-        const chartType = detectChartTypeFromContext(tableContext, originalText);
+        // Detect chart type - prioritize user query, then table context, then AI response
+        const chartType = detectChartTypeFromContext(tableContext, originalText, userQuery);
 
         console.log(`Table ${tableIndex + 1}: Chart data extracted:`, { chartType, labels, values, title });
 
@@ -1095,6 +1131,12 @@ function renderChart(chartData, containerElement) {
             if (chartType === 'donut') {
                 config.type = 'doughnut';
             }
+        } else if (chartType === 'polarArea') {
+            // For polar area charts, use multiple colors
+            config.type = 'polarArea';
+            config.data.datasets[0].backgroundColor = colors.slice(0, chartData.values.length);
+            config.data.datasets[0].borderColor = '#fff';
+            config.data.datasets[0].borderWidth = 2;
         } else if (chartType === 'line' || chartType === 'area') {
             // Line chart configuration
             config.data.datasets[0].backgroundColor = chartType === 'area' ? 'rgba(102, 126, 234, 0.2)' : 'transparent';
