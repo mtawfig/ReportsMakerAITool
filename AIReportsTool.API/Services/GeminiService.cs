@@ -14,7 +14,11 @@ namespace AIReportsTool.API.Services
 
         public GeminiService(IConfiguration configuration, ILogger<GeminiService> logger)
         {
-            _httpClient = new HttpClient();
+            _httpClient = new HttpClient
+            {
+                // Increase timeout to 5 minutes for long-running AI requests
+                Timeout = TimeSpan.FromMinutes(5)
+            };
             _apiKey = configuration["GeminiApi:ApiKey"]
                 ?? throw new ArgumentNullException("Gemini API key is not configured");
 
